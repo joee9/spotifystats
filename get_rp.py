@@ -24,6 +24,7 @@ sp = spotipy.Spotify(auth=token)
 
 if exists(path):
     df = pd.read_csv(path)
+    df.drop(df.tail(5).index,inplace=True) # drop last five songs; just in case spotify took a while to update; basically, start at an earlier time, but don't add a song more than once
     latest_time_stamp = df.tail(1).to_numpy()[0][1]
     latest_time = parser.parse(latest_time_stamp)
 
