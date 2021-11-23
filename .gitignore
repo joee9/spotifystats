@@ -4,3 +4,6 @@
 secrets.*
 __pychache__/*
 *.pyc
+./misc/*
+dup.py
+get_rp_old.py
