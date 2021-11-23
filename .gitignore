@@ -1,0 +1,6 @@
+./data/*
+*.txt
+*.cache*
+secrets.*
+__pychache__/*
+*.pyc

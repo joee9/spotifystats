@@ -1,0 +1,2 @@
+make a seperate "client secrets file" for username, id, and secret
+fix it so that, if fewer than ten songs are played, that only those songs that have been listened to are displayed. I.e., fix keys[0:10] to be a special case
