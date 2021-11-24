@@ -183,7 +183,8 @@ elif tf == "dm":
     dates.append(month_cutoff)
     tags.append("this month")
     
-# with open(f"{path}/analyses/pdf/header.tex", "w"):
+# with open(f"{path}/analyses/pdf/header.tex", "w") as f:
+#     f.write()
 
 
 output = open(f"{path}/analyses/pdf/part.tex", "w")
@@ -202,7 +203,7 @@ os.system(f"{pdflatex_path} -output-directory={path}/analyses/pdf {path}/analyse
 os.system(f"rm {path}/analyses/pdf/analysis.aux")
 os.system(f"rm {path}/analyses/pdf/analysis.log")
 os.system(f"rm {path}/analyses/pdf/*.jpg")
-os.system(f"rm {path}/analyses/pdf/part.tex")
+# os.system(f"rm {path}/analyses/pdf/part.tex")
 os.system(f"rm {path}/analyses/pdf/pdflatex_output.txt")
 
 # time = parser.isoparse(time_stamp)
