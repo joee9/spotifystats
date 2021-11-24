@@ -13,7 +13,8 @@ from urllib.request import urlretrieve
 
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path
 
-len_limit = 32
+a_len_limit = 30
+len_limit = 35
 path = home_path
 python = python_path
 
@@ -182,11 +183,11 @@ def make_formatted_top_songs_2(counts, file, tag, message):
         urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
         name = track_info["name"]
         if len(name) > len_limit:
-            name = name[0:len_limit] + "..."
+            name = name[0:len_limit-3] + "..."
         count = f"({counts[id]})"
         artist_names = format_artist_names(track_info)
-        if len(artist_names) > len_limit:
-            artist_names = artist_names[0:len_limit] + "..."
+        if len(artist_names) > a_len_limit:
+            artist_names = artist_names[0:a_len_limit-3] + "..."
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
@@ -209,11 +210,11 @@ def make_formatted_top_songs_2(counts, file, tag, message):
             urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
             name = track_info["name"]
             if len(name) > len_limit:
-                name = name[0:len_limit] + "..."
+                name = name[0:len_limit-3] + "..."
             count = f"({counts[id]})"
             artist_names = format_artist_names(track_info)
-            if len(artist_names) > len_limit:
-                artist_names = artist_names[0:len_limit] + "..."
+            if len(artist_names) > a_len_limit:
+                artist_names = artist_names[0:a_len_limit-3] + "..."
 
             file.write("\\begin{minipage}{.2\\textwidth}\n")
             file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
@@ -279,7 +280,7 @@ os.system(f"{pdflatex_path} -output-directory={path}/analyses/pdf {path}/analyse
 os.system(f"rm {path}/analyses/pdf/analysis.aux")
 os.system(f"rm {path}/analyses/pdf/analysis.log")
 os.system(f"rm {path}/analyses/pdf/*.jpg")
-# os.system(f"rm {path}/analyses/pdf/part.tex")
+os.system(f"rm {path}/analyses/pdf/part.tex")
 os.system(f"rm {path}/analyses/pdf/pdflatex_output.txt")
 
 # time = parser.isoparse(time_stamp)
