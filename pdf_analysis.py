@@ -13,6 +13,7 @@ from urllib.request import urlretrieve
 
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path
 
+len_limit = 32
 path = home_path
 python = python_path
 
@@ -23,6 +24,7 @@ python = python_path
 #     mode = "top_10"
 mode = "top_10"
 tf = "dm"
+# tf = "month"
 # if len(sys.argv) == 2:
 #     mode = sys.argv[1]
 # elif len(sys.argv) == 3:
@@ -153,6 +155,78 @@ def make_formatted_top_songs(counts, file, tag, message):
     file.write(f"Total songs {tag}: {total}\n")
     file.write("\\end{center}\n")
 
+def make_formatted_top_songs_2(counts, file, tag, message):
+    keys = counts.keys()
+    total = counts.sum()
+    ltf = False
+    if len(keys) < 5:
+        ltf = True
+
+    if len(keys) > 10:
+        keys = keys[0:10]   
+
+    if tag == "today":
+        t = "d"
+    elif tag == "this month":
+        t = "m"
+    
+    file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
+    file.write("\\begin{minipage}{.47\\textwidth}\n")
+
+
+    upp = 5
+    if len(keys) < upp: upp = len(keys)
+    for i in range(upp):
+        id = keys[i]
+        track_info = sp.track(id)
+        urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
+        name = track_info["name"]
+        if len(name) > len_limit:
+            name = name[0:len_limit] + "..."
+        count = f"({counts[id]})"
+        artist_names = format_artist_names(track_info)
+        if len(artist_names) > len_limit:
+            artist_names = artist_names[0:len_limit] + "..."
+
+        file.write("\\begin{minipage}{.2\\textwidth}\n")
+        file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
+        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+        file.write("\\begin{minipage}{.75\\textwidth}\n")
+        file.write(f"\\small {name}\\\\[2pt]\n")
+        file.write("\\footnotesize \\textbf{" + f"{count:5s}" + "} " + f"{artist_names}\n")
+        file.write("\end{minipage}\\\\[5pt]\n")
+        file.write("\n")
+
+    file.write("\\end{minipage}\\hfill%\n")
+    file.write("\\begin{minipage}{.47\\textwidth}\n")
+    
+    if not ltf:
+        upp = 10 
+        if len(keys) < upp: upp = len(keys)
+        for i in range(5,upp):
+            id = keys[i]
+            track_info = sp.track(id)
+            urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
+            name = track_info["name"]
+            if len(name) > len_limit:
+                name = name[0:len_limit] + "..."
+            count = f"({counts[id]})"
+            artist_names = format_artist_names(track_info)
+            if len(artist_names) > len_limit:
+                artist_names = artist_names[0:len_limit] + "..."
+
+            file.write("\\begin{minipage}{.2\\textwidth}\n")
+            file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
+            file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+            file.write("\\begin{minipage}{.75\\textwidth}\n")
+            file.write(f"\\small {name}\\\\[2pt]\n")
+            file.write("\\footnotesize \\textbf{" + f"{count:5s}" + "} " + f"{artist_names}\n")
+            file.write("\end{minipage}\\\\[5pt]\n")
+            file.write("\n")
+    
+    file.write("\\end{minipage}\n")
+    file.write("\\vspace{15pt}\n\n")
+
 
 my = datetime.strftime(datetime.today().astimezone(est), "%m-%Y")
 df = pd.read_csv(f"{path}/data/{my}-recentlyplayed.txt")
@@ -166,20 +240,20 @@ day_cutoff = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0
 month_cutoff = datetime.today().astimezone(est).replace(day=1, second=0, minute=0, hour=0, microsecond=0)
 
 if tf == "today":
-    messages.append("TODAY'S TOP SONGS")
+    messages.append("Today's Top Songs")
     dates.append(day_cutoff)
     tags.append("today")
 
 elif tf == "month":
-    messages.append("THIS MONTH'S TOP SONGS")
+    messages.append("This Month's Top Songs")
     dates.append(month_cutoff)
     tags.append("this month")
 
 elif tf == "dm":
-    messages.append("TODAY'S TOP SONGS")
+    messages.append("Today's Top Songs")
     dates.append(day_cutoff)
     tags.append("today")
-    messages.append("THIS MONTH'S TOP SONGS")
+    messages.append("This Month's Top Songs")
     dates.append(month_cutoff)
     tags.append("this month")
     
@@ -195,9 +269,11 @@ for i in range(len(dates)):
     tag = tags[i]
     counts = make_counts(df, date)
     # top_songs(counts, mode)
-    make_formatted_top_songs(counts,output,tag,messages[i])
+    make_formatted_top_songs_2(counts,output,tag,messages[i])
 
 output.close()
+
+#%%
 time.sleep(1)
 os.system(f"{pdflatex_path} -output-directory={path}/analyses/pdf {path}/analyses/pdf/analysis.tex > {path}/analyses/pdf/pdflatex_output.txt")
 os.system(f"rm {path}/analyses/pdf/analysis.aux")
