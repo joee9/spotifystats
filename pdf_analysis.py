@@ -18,8 +18,8 @@ len_limit = 35
 path = home_path
 python = python_path
 
-# os.system(f"{python} {path}/get_rp.py >> {path}/newsongs.txt")
-# os.system(f"rm {path}/newsongs.txt")
+os.system(f"{python} {path}/get_rp.py >> {path}/newsongs.txt")
+os.system(f"rm {path}/newsongs.txt")
 
 # if len(sys.argv) == 0 or len(sys.argv) == 1:
 #     mode = "top_10"
@@ -193,8 +193,8 @@ def make_formatted_top_songs_2(counts, file, tag, message):
         file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
         file.write("\\begin{minipage}{.75\\textwidth}\n")
-        file.write(f"\\small {name}\\\\[2pt]\n")
-        file.write("\\footnotesize \\textbf{" + f"{count:5s}" + "} " + f"{artist_names}\n")
+        file.write("\\small \\textbf{" + f"{name}" + "}\\\\[2pt]\n")
+        file.write("\\footnotesize" + f"{count:5s} {artist_names}\n")
         file.write("\end{minipage}\\\\[5pt]\n")
         file.write("\n")
 
@@ -220,8 +220,8 @@ def make_formatted_top_songs_2(counts, file, tag, message):
             file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
             file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
             file.write("\\begin{minipage}{.75\\textwidth}\n")
-            file.write(f"\\small {name}\\\\[2pt]\n")
-            file.write("\\footnotesize \\textbf{" + f"{count:5s}" + "} " + f"{artist_names}\n")
+            file.write("\\small \\textbf{" + f"{name}" + "}\\\\[2pt]\n")
+            file.write("\\footnotesize" + f"{count:5s} {artist_names}\n")
             file.write("\end{minipage}\\\\[5pt]\n")
             file.write("\n")
     
