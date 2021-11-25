@@ -5,7 +5,10 @@ import spotipy
 from datetime import datetime
 import pytz; est = pytz.timezone("America/New_York")
 from dateutil import parser
+from dateutil.tz import tzutc
 import os
+import sys
+import time
 from urllib.request import urlretrieve
 
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path
@@ -18,8 +21,21 @@ python = python_path
 os.system(f"{python} {path}/get_rp.py >> {path}/newsongs.txt")
 os.system(f"rm {path}/newsongs.txt")
 
+# if len(sys.argv) == 0 or len(sys.argv) == 1:
+#     mode = "top_10"
 mode = "top_10"
 tf = "dm"
+# tf = "month"
+# if len(sys.argv) == 2:
+#     mode = sys.argv[1]
+# elif len(sys.argv) == 3:
+#     mode = sys.argv[1]
+#     tf = sys.argv[2]
+# elif len(sys.argv) > 3:
+#     print("Too many arguments!")
+#     exit()
+
+# mode = "top_10"
 
 if mode == "top_10" or mode == "all":
     pass
@@ -87,6 +103,61 @@ def make_counts(df,date):
 
 def make_formatted_top_songs(counts, file, tag, message):
     keys = counts.keys()
+    if len(keys) > 5:
+        keys = keys[0:5]
+    
+    if tag == "today":
+        t = "d"
+    elif tag == "this month":
+        t = "m"
+    
+    file.write("\\begin{center}")
+    file.write("\\LARGE{" + f"{message}" + "}")
+    file.write("\\end{center}")
+
+    for i in range(len(keys)):
+        id = keys[i]
+        track_info = sp.track(id)
+        urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
+        name = track_info["name"]
+        count = counts[id]
+        artist_names = format_artist_names(track_info)
+
+        file.write("\\noindent\\begin{minipage}{.075\\textwidth}\n")
+        file.write("\\LARGE{" + f"{i+1}" + "}\n")
+        file.write("\\end{minipage}%\n")
+        file.write("\\begin{minipage}{.1\\textwidth}\n")
+        file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
+        file.write("\\end{minipage}%\n")
+        file.write("\\begin{minipage}{.05\\textwidth}\n")
+        file.write("\\end{minipage}%\n")
+        file.write("\\begin{minipage}{.375\\textwidth}\n")
+        file.write("\\large \\centering\n")
+        file.write(f"{name}\n")
+        file.write("\\end{minipage}%\n")
+        file.write("\\begin{minipage}{10pt}\n")
+        file.write("%\n")
+        file.write("\\end{minipage}%\n")
+        file.write("\\begin{minipage}{.325\\textwidth}\n")
+        file.write("\\large\\centering\n")
+        file.write(f"{artist_names}\n")
+        file.write("\\end{minipage}%\n")
+        file.write("\\hfill%\n")
+        file.write("\\begin{minipage}{.075\\textwidth}\n")
+        file.write("\\centering\\Large{(" + f"{count}" + ")}\n")
+        file.write("\\end{minipage}\n")
+        if i != len(keys) - 1:
+            file.write("\\vspace{5pt}\n\n")
+    
+
+    total = counts.sum()
+    file.write("\\begin{center}\n")
+    file.write("\\Large\centering\n")
+    file.write(f"Total songs {tag}: {total}\n")
+    file.write("\\end{center}\n")
+
+def make_formatted_top_songs_2(counts, file, tag, message):
+    keys = counts.keys()
     total = counts.sum()
     ltf = False
     if len(keys) < 5:
@@ -103,7 +174,11 @@ def make_formatted_top_songs(counts, file, tag, message):
     file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
-    def write(id):
+
+    upp = 5
+    if len(keys) < upp: upp = len(keys)
+    for i in range(upp):
+        id = keys[i]
         track_info = sp.track(id)
         urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
         name = track_info["name"]
@@ -123,11 +198,6 @@ def make_formatted_top_songs(counts, file, tag, message):
         file.write("\end{minipage}\\\\[5pt]\n")
         file.write("\n")
 
-    upp = 5
-    if len(keys) < upp: upp = len(keys)
-    for i in range(upp):
-        write(keys[i])
-
     file.write("\\end{minipage}\\hfill%\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
     
@@ -135,7 +205,25 @@ def make_formatted_top_songs(counts, file, tag, message):
         upp = 10 
         if len(keys) < upp: upp = len(keys)
         for i in range(5,upp):
-            write(keys[i])
+            id = keys[i]
+            track_info = sp.track(id)
+            urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
+            name = track_info["name"]
+            if len(name) > len_limit:
+                name = name[0:len_limit-3] + "..."
+            count = f"({counts[id]})"
+            artist_names = format_artist_names(track_info)
+            if len(artist_names) > a_len_limit:
+                artist_names = artist_names[0:a_len_limit-3] + "..."
+
+            file.write("\\begin{minipage}{.2\\textwidth}\n")
+            file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
+            file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+            file.write("\\begin{minipage}{.75\\textwidth}\n")
+            file.write("\\small \\textbf{" + f"{name}" + "}\\\\[2pt]\n")
+            file.write("\\footnotesize" + f"{count:5s} {artist_names}\n")
+            file.write("\end{minipage}\\\\[5pt]\n")
+            file.write("\n")
     
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
@@ -182,12 +270,12 @@ for i in range(len(dates)):
     tag = tags[i]
     counts = make_counts(df, date)
     # top_songs(counts, mode)
-    make_formatted_top_songs(counts,output,tag,messages[i])
+    make_formatted_top_songs_2(counts,output,tag,messages[i])
 
 output.close()
 
 #%%
-# time.sleep(1)
+time.sleep(1)
 os.system(f"{pdflatex_path} -output-directory={path}/analyses/pdf {path}/analyses/pdf/analysis.tex > {path}/analyses/pdf/pdflatex_output.txt")
 os.system(f"rm {path}/analyses/pdf/analysis.aux")
 os.system(f"rm {path}/analyses/pdf/analysis.log")
