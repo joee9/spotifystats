@@ -84,7 +84,7 @@ def make_counts(df,date):
     return songs["URI"].value_counts()
 
 def make_formatted_top_songs(counts, file, tag, message):
-    a_len_limit = 30
+    a_len_limit = 36
     len_limit = 30
     keys = counts.keys()
     total = counts.sum()
@@ -107,10 +107,11 @@ def make_formatted_top_songs(counts, file, tag, message):
         track_info = sp.track(id)
         urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
         name = track_info["name"]
+        count = f"({counts[id]})"
         if len(name) > len_limit:
             name = name[0:len_limit-3] + "..."
-        count = f"({counts[id]})"
-        artist_names = format_artist_names(track_info)
+        count = f"({counts[id]}) "
+        artist_names = count +  format_artist_names(track_info)
         if len(artist_names) > a_len_limit:
             artist_names = artist_names[0:a_len_limit-3] + "..."
 
@@ -119,7 +120,7 @@ def make_formatted_top_songs(counts, file, tag, message):
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
         file.write("\\begin{minipage}{.75\\textwidth}\n")
         file.write("\\small \\textbf{" + f"{name}" + "}\\\\[2pt]\n")
-        file.write("\\footnotesize" + f"{count:5s} {artist_names}\n")
+        file.write("\\footnotesize" + f"{artist_names}\n")
         file.write("\end{minipage}\\\\[5pt]\n")
         file.write("\n")
 
