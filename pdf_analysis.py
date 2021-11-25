@@ -10,8 +10,6 @@ from urllib.request import urlretrieve
 
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path
 
-a_len_limit = 30
-len_limit = 30
 path = home_path
 python = python_path
 
@@ -86,6 +84,8 @@ def make_counts(df,date):
     return songs["URI"].value_counts()
 
 def make_formatted_top_songs(counts, file, tag, message):
+    a_len_limit = 30
+    len_limit = 30
     keys = counts.keys()
     total = counts.sum()
     ltf = False
