@@ -7,8 +7,10 @@ import pytz; est = pytz.timezone("America/New_York")
 from dateutil import parser
 import os
 from urllib.request import urlretrieve
+import numpy as np
+from PIL import Image, ImageDraw
 
-from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path
+from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
 
 path = home_path
 python = python_path
@@ -142,6 +144,8 @@ def make_formatted_top_songs(counts, file, tag, message):
     file.write("\\vspace{15pt}\n\n")
 
 
+
+
 my = datetime.strftime(datetime.today().astimezone(est), "%m-%Y")
 df = pd.read_csv(f"{path}/data/{my}-recentlyplayed.txt")
 
@@ -185,6 +189,38 @@ for i in range(len(dates)):
     # top_songs(counts, mode)
     make_formatted_top_songs(counts,output,tag,messages[i])
 
+me = sp.current_user()
+urlretrieve(me["images"][0]["url"],f"{home_path}/analyses/pdf/pp.jpg")
+display_name = me["display_name"]
+
+img = Image.open(f"{home_path}/analyses/pdf/pp.jpg")
+
+height,width = img.size
+lum_img = Image.new('L', [height,width] , 0)
+
+draw = ImageDraw.Draw(lum_img)
+draw.pieslice([(0,0), (height,width)], 0, 360, 
+            fill = 255, outline = "white")
+img_arr = np.array(img)
+lum_img_arr = np.array(lum_img)
+final_img_arr = np.dstack((img_arr,lum_img_arr))
+
+img = Image.fromarray(final_img_arr)
+img.save(f"{home_path}/analyses/pdf/circpp.png")
+
+output.write("\\vfill\\raggedleft\n")
+output.write("\\begin{minipage}{.47\\textwidth}\n")
+output.write("\\raggedleft")
+output.write("\\begin{minipage}{.75\\textwidth}\n")
+output.write("\\raggedleft\\large \\textbf{" + f"{display_name}" +  "}\\\\[2pt]\n")
+# output.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
+output.write(f"\\normalsize\\today")
+output.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+output.write("\\begin{minipage}{.2\\textwidth}\n")
+output.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analyses/pdf/circpp.png}\n")
+output.write("\\end{minipage}\\end{minipage}\n")
+
+
 output.close()
 
 #%%
@@ -193,6 +229,7 @@ os.system(f"{pdflatex_path} -output-directory={path}/analyses/pdf {path}/analyse
 os.system(f"rm {path}/analyses/pdf/analysis.aux")
 os.system(f"rm {path}/analyses/pdf/analysis.log")
 os.system(f"rm {path}/analyses/pdf/*.jpg")
+os.system(f"rm {path}/analyses/pdf/*.png")
 os.system(f"rm {path}/analyses/pdf/part.tex")
 os.system(f"rm {path}/analyses/pdf/pdflatex_output.txt")
 
