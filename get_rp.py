@@ -35,7 +35,6 @@ else:
     # latest_time = datetime.today().replace(day=1, second=0, minute=0, hour=0, microsecond=0).astimezone(utc) # beginning of month
     latest_time = datetime.today().astimezone(est).replace(day=1,second=0,minute=0,hour=0,microsecond=1)
     # latest_time = datetime.today().astimezone(est).replace(second=0,minute=0,hour=0,microsecond=1)
-    print(latest_time)
     # latest_time.replace()
 
 #%%

@@ -2,7 +2,7 @@
 import pandas as pd
 import spotipy.util as util
 import spotipy
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz; est = pytz.timezone("America/New_York")
 from dateutil import parser
 from dateutil.tz import tzutc
@@ -21,14 +21,19 @@ os.system(f"rm {path}/newsongs.txt")
 #     mode = "top_10"
 mode = "top_10"
 tf = "dm"
-if len(sys.argv) == 2:
-    mode = sys.argv[1]
-elif len(sys.argv) == 3:
-    mode = sys.argv[1]
-    tf = sys.argv[2]
-elif len(sys.argv) > 3:
-    print("Too many arguments!")
-    exit()
+
+yesterday = False
+if len(sys.argv) == 2 and sys.argv[1] == "y":
+    yesterday = True
+
+# if len(sys.argv) == 2:
+#     mode = sys.argv[1]
+# elif len(sys.argv) == 3:
+#     mode = sys.argv[1]
+#     tf = sys.argv[2]
+# elif len(sys.argv) > 3:
+#     print("Too many arguments!")
+#     exit()
 # mode = "top_10"
 
 if mode == "top_10" or mode == "all":
@@ -83,12 +88,12 @@ def top_songs(counts, mode):
     
         print(f"{count:3d}  {name}, by {artist_names}")
 
-def make_counts(df,date):
+def make_counts(df,date,end):
     songs = pd.DataFrame(columns=["URI","Timestamp"])
     for i in range(len(df)):
         timestamp = df.iloc[i,1]
         parsed = parser.parse(timestamp).astimezone(est)
-        if  parsed > date:
+        if  parsed > date and parsed < end:
             songs = songs.append(df.iloc[i,:])
     
     return songs["URI"].value_counts()
@@ -102,6 +107,19 @@ tags = []
 
 day_cutoff = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
 month_cutoff = datetime.today().astimezone(est).replace(day=1, second=0, minute=0, hour=0, microsecond=0)
+end = datetime.today().astimezone(est)
+
+
+if yesterday:
+    
+    day_cutoff = day_cutoff - timedelta(days=1)
+
+    m = int(datetime.strftime(day_cutoff,"%m"))
+    month_cutoff = datetime.today().astimezone(est).replace(month=m, day=1, second=0, minute=0, hour=0, microsecond=0)
+    
+    end = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
+
+today_str = datetime.strftime(day_cutoff,"%B %d, %Y")
 
 if tf == "today":
     messages.append("TODAY'S TOP SONGS")
@@ -127,7 +145,7 @@ for i in range(len(dates)):
     tag = tags[i]
     print(messages[i])
     print(f"###  SONG")
-    counts = make_counts(df, date)
+    counts = make_counts(df, date, end)
     total = counts.sum()
     top_songs(counts, mode)
     print(f"Total songs played {tag}: {total}")

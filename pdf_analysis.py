@@ -2,10 +2,11 @@
 import pandas as pd
 import spotipy.util as util
 import spotipy
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz; est = pytz.timezone("America/New_York")
 from dateutil import parser
 import os
+import sys
 from urllib.request import urlretrieve
 import numpy as np
 from PIL import Image, ImageDraw
@@ -20,6 +21,12 @@ os.system(f"rm {path}/newsongs.txt")
 
 mode = "top_10"
 tf = "dm"
+
+yesterday = False
+if len(sys.argv) == 2 and sys.argv[1] == "y":
+    yesterday = True
+# yesterday = True
+# yesterday = False
 
 if mode == "top_10" or mode == "all":
     pass
@@ -75,12 +82,12 @@ def top_songs(counts, mode):
     
         print(f"{count:3d}  {name}, by {artist_names}")
 
-def make_counts(df,date):
+def make_counts(df,date,end):
     songs = pd.DataFrame(columns=["URI","Timestamp"])
     for i in range(len(df)):
         timestamp = df.iloc[i,1]
         parsed = parser.parse(timestamp).astimezone(est)
-        if  parsed > date:
+        if  parsed > date and parsed < end:
             songs = songs.append(df.iloc[i,:])
     
     return songs["URI"].value_counts()
@@ -113,7 +120,7 @@ def make_formatted_top_songs(counts, file, tag, message):
         if len(name) > len_limit:
             name = name[0:len_limit-3] + "..."
         count = f"({counts[id]}) "
-        artist_names = count +  format_artist_names(track_info)
+        artist_names = count + format_artist_names(track_info)
         if len(artist_names) > a_len_limit:
             artist_names = artist_names[0:a_len_limit-3] + "..."
 
@@ -122,7 +129,7 @@ def make_formatted_top_songs(counts, file, tag, message):
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
         file.write("\\begin{minipage}{.75\\textwidth}\n")
         file.write("\\small \\textbf{" + f"{name}" + "}\\\\[2pt]\n")
-        file.write("\\footnotesize" + f"{artist_names}\n")
+        file.write("\\footnotesize" + f" {artist_names}\n")
         file.write("\end{minipage}\\\\[5pt]\n")
         file.write("\n")
 
@@ -156,6 +163,23 @@ tags = []
 
 day_cutoff = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
 month_cutoff = datetime.today().astimezone(est).replace(day=1, second=0, minute=0, hour=0, microsecond=0)
+end = datetime.today().astimezone(est)
+
+
+if yesterday:
+    
+    day_cutoff = day_cutoff - timedelta(days=1)
+
+    m = int(datetime.strftime(day_cutoff,"%m"))
+    month_cutoff = datetime.today().astimezone(est).replace(month=m, day=1, second=0, minute=0, hour=0, microsecond=0)
+    
+    end = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
+
+today_str = datetime.strftime(day_cutoff,"%B %d, %Y")
+
+# print(day_cutoff, month_cutoff, end)
+
+#%%
 
 if tf == "today":
     messages.append("Today's Top Songs")
@@ -185,7 +209,7 @@ output = open(f"{path}/analyses/pdf/part.tex", "w")
 for i in range(len(dates)):
     date = dates[i]
     tag = tags[i]
-    counts = make_counts(df, date)
+    counts = make_counts(df, date, end)
     # top_songs(counts, mode)
     make_formatted_top_songs(counts,output,tag,messages[i])
 
@@ -214,7 +238,7 @@ output.write("\\raggedleft")
 output.write("\\begin{minipage}{.75\\textwidth}\n")
 output.write("\\raggedleft\\large \\textbf{" + f"{display_name}" +  "}\\\\[2pt]\n")
 # output.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
-output.write(f"\\normalsize\\today")
+output.write(f"\\normalsize {today_str}")
 output.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
 output.write("\\begin{minipage}{.2\\textwidth}\n")
 output.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analyses/pdf/circpp.png}\n")
