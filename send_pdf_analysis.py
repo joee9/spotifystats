@@ -9,15 +9,17 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz; est = pytz.timezone("America/New_York")
 
 yesterday = False
 today = datetime.today().astimezone(est)
 args = ""
 if len(sys.argv) == 2 and sys.argv[1] == "y":
-    d = int(datetime.strftime(today,"%d")) - 1
-    today = datetime.today().astimezone(est).replace(day=d, second=0, minute = 0, hour=0, microsecond=0)
+    # d = int(datetime.strftime(today,"%d")) - 1
+    # today = datetime.today().astimezone(est).replace(day=d, second=0, minute = 0, hour=0, microsecond=0)
+    d = datetime.today() - timedelta(days=1)
+    today = d.astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
     yesterday = True
     args = " y"
 

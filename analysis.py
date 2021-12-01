@@ -98,9 +98,6 @@ def make_counts(df,date,end):
     
     return songs["URI"].value_counts()
 
-my = datetime.strftime(datetime.today().astimezone(est), "%m-%Y")
-df = pd.read_csv(f"{path}/data/{my}-recentlyplayed.txt")
-
 dates = []
 messages = []
 tags = []
@@ -110,6 +107,7 @@ month_cutoff = datetime.today().astimezone(est).replace(day=1, second=0, minute=
 end = datetime.today().astimezone(est)
 
 
+yesterday = True
 if yesterday:
     
     day_cutoff = day_cutoff - timedelta(days=1)
@@ -120,6 +118,9 @@ if yesterday:
     end = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
 
 today_str = datetime.strftime(day_cutoff,"%B %d, %Y")
+
+my = datetime.strftime(day_cutoff, "%m-%Y")
+df = pd.read_csv(f"{path}/data/{my}-recentlyplayed.txt")
 
 if tf == "today":
     messages.append("TODAY'S TOP SONGS")

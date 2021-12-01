@@ -2,17 +2,25 @@
 import pandas as pd
 import spotipy.util as util
 import spotipy
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 est = pytz.timezone("America/New_York")
 utc = pytz.timezone("UTC")
 from dateutil import parser
 from os.path import exists
+import sys
+
+# TODO: implement code that will add all remaining songs from last month to last months rp file automatically
 
 from secrets import username, client_id, client_secret, home_path
 
 my = datetime.strftime(datetime.today().astimezone(est), "%m-%Y")
 path = f"{home_path}/data/{my}-recentlyplayed.txt"
+
+# if len(sys.argv) == 2 and sys.argv[1] == "lm":
+#     yesterday = datetime.today() - timedelta(days=1)
+#     yesterday = yesterday.astimezone(est)
+#     my = datetime.strftime(yesterday, "%m-%Y")
 
 redirect_uri = 'http://localhost:7777/callback'
 # scope = 'user-read-recently-played'
@@ -26,8 +34,12 @@ if exists(path):
     new_month = False
     df = pd.read_csv(path)
     # df.drop(df.tail(5).index,inplace=True) # drop last five songs; just in case spotify took a while to update; basically, start at an earlier time, but don't add a song more than once
-    latest_time_stamp = df.tail(1).to_numpy()[0][1]
-    latest_time = parser.parse(latest_time_stamp)
+    if len(df) == 0:
+        new_month = True
+        latest_time = datetime.today().astimezone(est).replace(day=1,second=0,minute=0,hour=0,microsecond=1)
+    else:
+        latest_time_stamp = df.tail(1).to_numpy()[0][1]
+        latest_time = parser.parse(latest_time_stamp)
 
 else:
     new_month = True
@@ -46,6 +58,18 @@ recently_played = sp.current_user_recently_played(limit=lim)
 # find the time that the oldest track in recently_played was played
 oldest_rp_ts = recently_played["items"][lim-1]["played_at"]
 oldest_rp_time = parser.parse(oldest_rp_ts)
+
+earliest_time = datetime.today().astimezone(est).replace(day=1,second=0,minute=0,hour=0,microsecond=1)
+# if len(df) == 0:
+#     # earliest time is beginning of the month
+#     earliest_time = latest_time
+# else:
+#     # earliest time is beginning of the df
+#     earliest_time = df.head(1).to_numpy()[0][1]
+#     earliest_time = parser.parse(earliest_time)
+
+# if oldest_rp_time < earliest_time: oldest_rp_time = earliest_time # only add songs from ths month
+# print(latest_time)
 
 if oldest_rp_time > latest_time: # all rp tracks are more recent than the df
     idx = 1 # add all songs to the tail of df
@@ -71,6 +95,7 @@ elif not new_month:
 else:
     # determine which songs from rp are from this month and add to df
     # only for new month
+    idx = lim + 1
     for i in range(1,lim+1):
         track_ts = recently_played["items"][lim - i]["played_at"]
         parsed_track_ts = parser.parse(track_ts)
@@ -84,10 +109,12 @@ for i in range(idx, lim+1):
     track_uri = recently_played["items"][lim - i]["track"]["uri"]
     track_ts = recently_played["items"][lim - i]["played_at"]
 
-    df = df.append({
-        "URI": track_uri,
-        "Timestamp": track_ts
-    }, ignore_index=True)
+    # only add if in this month
+    if parser.parse(track_ts) > earliest_time:
+        df = df.append({
+            "URI": track_uri,
+            "Timestamp": track_ts
+        }, ignore_index=True)
 
     
 df.to_csv(path, index=False)
