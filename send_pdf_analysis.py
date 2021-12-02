@@ -23,7 +23,7 @@ if len(sys.argv) == 2 and sys.argv[1] == "y":
     yesterday = True
     args = " y"
 
-s = datetime.strftime(today, "%m%d%y")
+s = datetime.strftime(today, "%Y-%m%d")
 sf = datetime.strftime(today, "%B %d, %Y")
 my = datetime.strftime(today,"%m-%Y")
 
@@ -47,10 +47,10 @@ os.system(f"cp {path}/analyses/{s}-analysis.pdf {gd_path}/analyses/{s}-analysis.
 with open(f"{path}/analyses/{s}-analysis.txt") as f:
     message = """"""
 
-    s = f.readline()
-    while (s != ""):
-        message += s
-        s = f.readline()
+    string = f.readline()
+    while (string != ""):
+        message += string
+        string = f.readline()
 
 m = MIMEMultipart()
 m["Subject"] = f"Today's Stats! {sf}"
@@ -61,7 +61,7 @@ m["CC"] = cc
 message = MIMEText(message, "plain")
 m.attach(message)
 
-s = datetime.strftime(today, "%m%d%y")
+# s = datetime.strftime(today, "%m%d%y")
 attachment = f"{path}/analyses/{s}-analysis.pdf"
 with open(attachment, "rb") as a:
     part = MIMEBase("application", "octet-stream")

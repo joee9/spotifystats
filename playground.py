@@ -22,8 +22,9 @@ python = python_path
 month = "11-2021"
 
 
-os.system(f"{python} {path}/get_rp.py >> {path}/newsongs.txt")
-os.system(f"rm {path}/newsongs.txt")
+# os.system(f"{python} {path}/get_rp.py >> {path}/newsongs.txt")
+# os.system(f"rm {path}/newsongs.txt")
+
 
 mode = "top_10"
 tf = "dm"
@@ -36,7 +37,8 @@ token = util.prompt_for_user_token(username=username, scope=scope, client_id=cli
 
 sp = spotipy.Spotify(auth=token)
 #%%
-rp = sp.current_user_top_artists()
+# rp = sp.current_user_top_artists(limit = 50)
+rp = sp.current_user_recently_played(limit = 50)
 
 # %%
 me = sp.current_user()
@@ -61,3 +63,4 @@ img = Image.fromarray(final_img_arr)
 img.save("circprofilepic.png")
 
 # %%
+name = "My Wife & 2 Dogs"

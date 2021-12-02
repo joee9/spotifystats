@@ -106,8 +106,6 @@ day_cutoff = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0
 month_cutoff = datetime.today().astimezone(est).replace(day=1, second=0, minute=0, hour=0, microsecond=0)
 end = datetime.today().astimezone(est)
 
-
-yesterday = True
 if yesterday:
     
     day_cutoff = day_cutoff - timedelta(days=1)

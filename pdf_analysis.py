@@ -124,6 +124,13 @@ def make_formatted_top_songs(counts, file, tag, message):
         if len(artist_names) > a_len_limit:
             artist_names = artist_names[0:a_len_limit-3] + "..."
 
+        if "&" in name: name = name.replace("&", "\&")
+        if "$" in name: name = name.replace("$", "\$")
+        if "#" in name: name = name.replace("#", "\#")
+        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
+        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
+        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
+
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
@@ -163,8 +170,6 @@ day_cutoff = datetime.today().astimezone(est).replace(second=0, minute=0, hour=0
 month_cutoff = datetime.today().astimezone(est).replace(day=1, second=0, minute=0, hour=0, microsecond=0)
 end = datetime.today().astimezone(est)
 
-
-yesterday = True
 if yesterday:
     
     day_cutoff = day_cutoff - timedelta(days=1)
