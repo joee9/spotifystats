@@ -137,7 +137,7 @@ def make_formatted_top_songs(counts, file, tag, message):
         file.write("\\begin{minipage}{.75\\textwidth}\n")
         file.write("\\small \\textbf{" + f"{name}" + "}\\\\[2pt]\n")
         file.write("\\footnotesize" + f" {artist_names}\n")
-        file.write("\end{minipage}\\\\[5pt]\n")
+        file.write("\\end{minipage}\\\\[5pt]\n")
         file.write("\n")
 
     upp = 5
