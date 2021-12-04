@@ -114,7 +114,7 @@ def make_formatted_top_songs(counts, file, tag, message):
 
     def write(id):
         track_info = sp.track(id)
-        urlretrieve(track_info["album"]["images"][0]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
+        urlretrieve(track_info["album"]["images"][1]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
         name = track_info["name"]
         count = f"({counts[id]})"
         if len(name) > len_limit:
