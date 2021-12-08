@@ -1,33 +1,44 @@
+# Joe Nyhan, 08 December 2021
+# Produces a LaTeX generated .pdf with top songs of the day and month
 #%%
-import pandas as pd
+# spotify libraries
 import spotipy.util as util
 import spotipy
+
+# time related
 from datetime import datetime, timedelta
 import pytz; est = pytz.timezone("America/New_York")
 from dateutil import parser
+
+#system related
 import os
 import sys
-from urllib.request import urlretrieve
+
+# misc
+import pandas as pd
 import numpy as np
+from urllib.request import urlretrieve
 from PIL import Image, ImageDraw
 
+# user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
 
 path = home_path
 python = python_path
 
+# get recently played songs
 os.system(f"{python} {path}/get_rp.py >> {path}/newsongs.txt")
 os.system(f"rm {path}/newsongs.txt")
 
-mode = "top_10"
-tf = "dm"
+mode = "top_10" # mode
+tf = "dm"       # time frame
 
+# include a "y" on command line to perform analysis for yesterday's data
 yesterday = False
 if len(sys.argv) == 2 and sys.argv[1] == "y":
     yesterday = True
-# yesterday = True
-# yesterday = False
 
+# misc error checking
 if mode == "top_10" or mode == "all":
     pass
 else:
@@ -39,6 +50,8 @@ if tf in ["today", "month", "year", "dm"]:
 else:
     print("Incorrect TimeFrame!")
     exit()
+
+# get authorization
 
 redirect_uri = 'http://localhost:7777/callback'
 # scope = 'user-read-recently-played'
@@ -53,6 +66,9 @@ sp = spotipy.Spotify(auth=token)
 ## useful methods
 
 def format_artist_names(track_info):
+    """
+    track_info: insert spotify track object; returns formatted string of the artist names
+    """
     artists = track_info["album"]["artists"]
     num_artists = len(artists)
     artist_names = ""
@@ -70,6 +86,9 @@ def format_artist_names(track_info):
     return artist_names
 
 def top_songs(counts, mode):
+    """
+    prints out the top songs for a given pd.series containing counts
+    """
     keys = counts.keys()
     if mode == "top_10" and len(keys) > 10:
         keys = keys[0:10]
@@ -83,6 +102,9 @@ def top_songs(counts, mode):
         print(f"{count:3d}  {name}, by {artist_names}")
 
 def make_counts(df,date,end):
+    """
+    Given a dataframe, a starting date and an ending date; return a data frame of the value counts for song ids
+    """
     songs = pd.DataFrame(columns=["URI","Timestamp"])
     for i in range(len(df)):
         timestamp = df.iloc[i,1]
@@ -93,6 +115,9 @@ def make_counts(df,date,end):
     return songs["URI"].value_counts()
 
 def make_formatted_top_songs(counts, file, tag, message):
+    """
+    make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
+    """
     a_len_limit = 36
     len_limit = 30
     keys = counts.keys()
@@ -184,9 +209,6 @@ today_str = datetime.strftime(day_cutoff,"%B %d, %Y")
 my = datetime.strftime(day_cutoff, "%m-%Y")
 df = pd.read_csv(f"{path}/data/{my}-recentlyplayed.txt")
 
-# print(day_cutoff, month_cutoff, end)
-
-#%%
 
 if tf == "today":
     messages.append("Today's Top Songs")
@@ -206,32 +228,28 @@ elif tf == "dm":
     dates.append(month_cutoff)
     tags.append("this month")
     
-# with open(f"{path}/analyses/pdf/header.tex", "w") as f:
-#     f.write()
-
 
 output = open(f"{path}/analyses/pdf/part.tex", "w")
 
-
+# produce minipages and place them on pdf
 for i in range(len(dates)):
     date = dates[i]
     tag = tags[i]
     counts = make_counts(df, date, end)
-    # top_songs(counts, mode)
     make_formatted_top_songs(counts,output,tag,messages[i])
 
+# get profile image
 me = sp.current_user()
 urlretrieve(me["images"][0]["url"],f"{home_path}/analyses/pdf/pp.jpg")
 display_name = me["display_name"]
 
+# make image a circle
 img = Image.open(f"{home_path}/analyses/pdf/pp.jpg")
-
 height,width = img.size
 lum_img = Image.new('L', [height,width] , 0)
 
 draw = ImageDraw.Draw(lum_img)
-draw.pieslice([(0,0), (height,width)], 0, 360, 
-            fill = 255, outline = "white")
+draw.pieslice([(0,0), (height,width)], 0, 360, fill = 255, outline = "white")
 img_arr = np.array(img)
 lum_img_arr = np.array(lum_img)
 final_img_arr = np.dstack((img_arr,lum_img_arr))
@@ -239,6 +257,7 @@ final_img_arr = np.dstack((img_arr,lum_img_arr))
 img = Image.fromarray(final_img_arr)
 img.save(f"{home_path}/analyses/pdf/circpp.png")
 
+# print image, date, user name to file
 output.write("\\vfill\\raggedleft\n")
 output.write("\\begin{minipage}{.47\\textwidth}\n")
 output.write("\\raggedleft")
@@ -254,16 +273,12 @@ output.write("\\end{minipage}\\end{minipage}\n")
 
 output.close()
 
-#%%
-# time.sleep(1)
+# compile pdf
 os.system(f"{pdflatex_path} -output-directory={path}/analyses/pdf {path}/analyses/pdf/analysis.tex > {path}/analyses/pdf/pdflatex_output.txt")
+# delte auxillary files
 os.system(f"rm {path}/analyses/pdf/analysis.aux")
 os.system(f"rm {path}/analyses/pdf/analysis.log")
 os.system(f"rm {path}/analyses/pdf/*.jpg")
 os.system(f"rm {path}/analyses/pdf/*.png")
 os.system(f"rm {path}/analyses/pdf/part.tex")
 os.system(f"rm {path}/analyses/pdf/pdflatex_output.txt")
-
-# time = parser.isoparse(time_stamp)
-# time_est = time.astimezone(est)
-# time_print = datetime.strftime(time_est, "%c")
