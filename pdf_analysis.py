@@ -118,11 +118,10 @@ def make_formatted_top_songs(counts, file, tag, message):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
-    a_len_limit = 36
-    len_limit = 30
     keys = counts.keys()
     total = counts.sum()
     ltf = False
+
     if len(keys) < 5:
         ltf = True
 
@@ -138,17 +137,15 @@ def make_formatted_top_songs(counts, file, tag, message):
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
     def write(id):
+        
+        # get information to write
         track_info = sp.track(id)
         urlretrieve(track_info["album"]["images"][1]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
         name = track_info["name"]
         count = f"({counts[id]})"
-        # if len(name) > len_limit:
-        #     name = name[0:len_limit-3] + "..."
-        count = f"({counts[id]}) "
         artist_names = count + format_artist_names(track_info)
-        # if len(artist_names) > a_len_limit:
-        #     artist_names = artist_names[0:a_len_limit-3] + "..."
 
+        # replace latex special characters
         if "&" in name: name = name.replace("&", "\&")
         if "$" in name: name = name.replace("$", "\$")
         if "#" in name: name = name.replace("#", "\#")
@@ -160,10 +157,8 @@ def make_formatted_top_songs(counts, file, tag, message):
         file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analyses/pdf/{t}{i}" + ".jpg}\n")
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
         file.write("\\begin{minipage}{.75\\textwidth}\n")
-        # file.write("\\small \\textbf{" + f"{name}" + "}\\\\[2pt]\n")
         file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
         file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-        # file.write("\\footnotesize" + f" {artist_names}\n")
         file.write("\\end{minipage}\\\\[5pt]\n")
         file.write("\n")
 
