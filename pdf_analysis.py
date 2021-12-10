@@ -142,7 +142,7 @@ def make_formatted_top_songs(counts, file, tag, message):
         track_info = sp.track(id)
         urlretrieve(track_info["album"]["images"][1]["url"], f"{path}/analyses/pdf/{t}{i}.jpg")
         name = track_info["name"]
-        count = f"({counts[id]})"
+        count = f"({counts[id]}) "
         artist_names = count + format_artist_names(track_info)
 
         # replace latex special characters

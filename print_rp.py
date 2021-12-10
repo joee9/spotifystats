@@ -47,6 +47,7 @@ if len(sys.argv) == 2:
     num = int(sys.argv[1])
 else:
     print("Incorrect arguments! Please try again!")
+    exit()
 
 
 redirect_uri = 'http://localhost:7777/callback'
