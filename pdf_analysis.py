@@ -120,6 +120,8 @@ def make_formatted_top_songs(counts, file, tag, message):
     """
     keys = counts.keys()
 
+    if len(keys) > 25: keys = keys[0:25]
+
     total = counts.sum()
     # add comma if necessary (assumes 4 digit numbers max)
     total = str(total)
@@ -127,6 +129,21 @@ def make_formatted_top_songs(counts, file, tag, message):
         total = total[0] + "," + total[1:]
 
     ltf = False
+
+    sorted = []
+    for key in keys:
+        name = sp.track(key)["name"]
+        sorted.append({"name": name, "URI": key, "count": counts[key]})
+
+    def sort_by_name(d): return -d["count"], d["name"]
+
+    sorted.sort(key=sort_by_name)
+
+    sorted_keys = []
+    for entry in sorted:
+        sorted_keys.append(entry["URI"])
+    
+    keys = sorted_keys
 
     if len(keys) < 5:
         ltf = True

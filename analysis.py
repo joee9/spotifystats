@@ -77,6 +77,24 @@ def format_artist_names(track_info):
 
 def top_songs(counts, mode):
     keys = counts.keys()
+
+    if len(keys) > 25: keys = keys[0:25]
+
+    sorted = []
+    for key in keys:
+        name = sp.track(key)["name"]
+        sorted.append({"name": name, "URI": key, "count": counts[key]})
+
+    def sort_by_name(d): return -d["count"], d["name"]
+
+    sorted.sort(key=sort_by_name)
+
+    sorted_keys = []
+    for entry in sorted:
+        sorted_keys.append(entry["URI"])
+    
+    keys = sorted_keys
+
     if mode == "top_10" and len(keys) > 10:
         keys = keys[0:10]
 

@@ -63,4 +63,30 @@ img = Image.fromarray(final_img_arr)
 img.save("circprofilepic.png")
 
 # %%
-name = "My Wife & 2 Dogs"
+
+my = "12-2021"
+path = f"{home_path}/data/{my}-recentlyplayed.txt"
+df = pd.read_csv(path)
+
+counts = df["URI"].value_counts()
+keys = counts.keys()[0:10]
+
+sorted = []
+for key in keys:
+    name = sp.track(key)["name"]
+    sorted.append({"name": name, "URI": key, "count": counts[key]})
+
+def sort_by_name(d): return -d["count"], d["name"]
+
+sorted.sort(key=sort_by_name)
+
+sorted_keys = []
+for entry in sorted:
+    sorted_keys.append(entry["URI"])
+
+print(sorted, sorted_keys)
+
+
+
+
+# %%
