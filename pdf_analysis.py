@@ -121,7 +121,7 @@ def make_formatted_top_songs(counts, file, tag, message):
     keys = counts.keys()
 
     total = counts.sum()
-    # add comma if necessary
+    # add comma if necessary (assumes 4 digit numbers max)
     total = str(total)
     if len(total) == 4:
         total = total[0] + "," + total[1:]
