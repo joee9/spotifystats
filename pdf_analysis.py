@@ -119,7 +119,13 @@ def make_formatted_top_songs(counts, file, tag, message):
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
     keys = counts.keys()
+
     total = counts.sum()
+    # add comma if necessary
+    total = str(total)
+    if len(total) == 4:
+        total = total[0] + "," + total[1:]
+
     ltf = False
 
     if len(keys) < 5:
@@ -132,7 +138,7 @@ def make_formatted_top_songs(counts, file, tag, message):
         t = "d"
     elif tag == "this month":
         t = "m"
-    
+
     file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
