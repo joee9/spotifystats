@@ -40,7 +40,7 @@ os.system(f"cp {path}/data/{my}-recentlyplayed.txt {gd_path}/{my}-recentlyplayed
 os.system(f"cp {path}/analyses/{s}-analysis.txt {gd_path}/analyses/{s}-analysis.txt")
 os.system(f"cp {path}/analyses/pdf/analysis.pdf {path}/analyses/{s}-analysis.pdf")
 os.system(f"rm {path}/analyses/pdf/analysis.pdf")
-os.system(f"cp {path}/analyses/{s}-analysis.pdf {gd_path}/analyses/{s}-analysis.pdf")
+# os.system(f"cp {path}/analyses/{s}-analysis.pdf {gd_path}/analyses/{s}-analysis.pdf")
 
 #%%
 
