@@ -10,9 +10,9 @@
 
 2. Create the `./data/` directory. This is where the song databases will live (`./data/mm-yyyy-songlist.txt`).
 
-3. Modify the path within `./analysis/analysis.tex` such that it points to your specific `./analysis/` directory. This points to my personal directory.
+3. Modify the path within `./analysis/analysis.tex` such that it points to your specific `./analysis/` directory. Currently, it points to my personal directory.
 
-4. create the `./secrets.py` file. This contains user specific information; it should contain these variables:
+4. Create the `./secrets.py` file. This contains user specific information; it should contain these variables:
     - Spotify specific:
         - `username` (str): the user's login username, usually an email address
         - `client_id` (str): the user's client ID; get from step 1.
