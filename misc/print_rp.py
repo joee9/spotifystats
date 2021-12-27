@@ -58,7 +58,7 @@ token = util.prompt_for_user_token(username=username, scope=scope, client_id=cli
 
 sp = spotipy.Spotify(auth=token)
 
-df = pd.read_csv(f"{home_path}/data/{my}-recentlyplayed.txt")
+df = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
 
 n = len(df)
 for i in range(num):

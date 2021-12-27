@@ -24,7 +24,7 @@ from secrets import username, client_id, client_secret, home_path
 # TODO: implement code that will add all remaining songs from last month to last months rp file automatically
 
 my = datetime.strftime(datetime.today().astimezone(est), "%m-%Y") # month year; for file paths
-path = f"{home_path}/data/{my}-recentlyplayed.txt"
+path = f"{home_path}/data/{my}-songlist.txt"
 
 
 # get authorization token
