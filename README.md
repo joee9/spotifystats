@@ -1,6 +1,6 @@
 # Spotify Stats
 
-"Spotify Stats" was developed to allow Spotify users to collect and analyze their listening history. This implementation creates a database of the songs that the user listens to and at what time, then sends a daily recap to the user via email.
+"Spotify Stats" was developed to allow Spotify users to collect and analyze their listening history. This implementation creates a database of the songs that the user listens to and at what time, then sends a daily recap to the user via email. An example recap is given in `./example_summary.pdf`.
 
 ## Setup
 
