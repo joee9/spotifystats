@@ -8,7 +8,5 @@ This project will create a database of songs played each month, and at the end o
 
 ## Outline
 - `get_rp.py` should be run each hour; this "gets recently played" songs.
-- `analysis.py` compiles a text based summary of top songs for the day and month
-- `pdf_analysis.py` compiles a LaTeX `.pdf` containing top songs for the day and month
-- `send_analysis.py` sends the text analysis to the email address within `secrets.py`
-- `send_pdf_analysis.py` sends the `.pdf` and text analysis to the email address within `secrets.py`
+- `analysis.py` compiles a text based summary and LaTeX generated `.pdf` of top songs for the day and month and places them in `./analysis`
+- `send_analysis.py` sends the text and `/pdf` analyses to the email addresses within `secrets.py`
