@@ -1,3 +1,5 @@
+# Joe Nyhan, 26 December 2021
+# Sends .pdf and .txt file with top songs of the day and month via email
 #%%
 import os
 import sys

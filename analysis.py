@@ -1,4 +1,4 @@
-# Joe Nyhan, 08 December 2021
+# Joe Nyhan, 26 December 2021
 # Produces a LaTeX generated .pdf and .txt file with top songs of the day and month
 #%%
 # spotify libraries
