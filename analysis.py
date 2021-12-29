@@ -103,12 +103,18 @@ def get_song_info(db, id):
             artist_names.append(artist["name"])
         name = track["name"]
         pic_url = track["album"]["images"][1]["url"]
+        sp_url = track["external_urls"]["spotify"]
+        album_id = track["album"]["id"]
+        album_name = track["album"]["name"]
 
         # adds this entry to the database for future reference
         db[id] = {"name": name,
             "ArtistIDs": artist_ids,
             "ArtistNames": artist_names,
-            "PicURL": pic_url
+            "AlbumID": album_id,
+            "AlbumName": album_name,
+            "PicURL": pic_url,
+            "SpotifyURL": sp_url
         }
 
     return db[id]
@@ -171,13 +177,13 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
 
     if tag == "today":
         t = "d"
-    elif tag == "this month":
+    else:
         t = "m"
 
     file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
-    def write(song):
+    def write(song, i):
         
         id = song["ID"]
         # get information to write
@@ -187,6 +193,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
         name = track_info["name"]
         count = f"({song['count']}) "
         artist_names = count + format_artist_names(track_info["ArtistNames"])
+        sp_url = track_info["SpotifyURL"]
 
         # replace latex special characters
         if "&" in name: name = name.replace("&", "\&")
@@ -197,7 +204,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
         if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}/analysis/{t}{i}" + ".jpg}\n")
+        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + f"{home_path}/analysis/{t}{i}" + ".jpg}}\n")
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
         file.write("\\begin{minipage}{.75\\textwidth}\n")
         file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
@@ -208,7 +215,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
     upp = 5
     if len(songs) < upp: upp = len(songs)
     for i in range(upp):
-        write(songs[i])
+        write(songs[i], i)
 
     file.write("\\end{minipage}\\hfill%\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
@@ -217,7 +224,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
         upp = 10 
         if len(songs) < upp: upp = len(songs)
         for i in range(5,upp):
-            write(songs[i])
+            write(songs[i], i)
     
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
@@ -243,6 +250,7 @@ month = day.replace(month = m, day = 1)
 
 # get a string for the date, e.g. 12-2021
 my = datetime.strftime(day, "%m-%Y")
+month_str = datetime.strftime(month, "%B")
 today_str = datetime.strftime(day,"%B %d, %Y")
 
 # get relevant series and dfs
@@ -274,7 +282,7 @@ txt = open(f"{home_path}/analysis/analysis.txt", "w")
 
 make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", "today", today_total, db)
 txt.write("\n")
-make_top_songs(month_topsongs, txt, "THIS MONTH'S TOP SONGS", "this month", month_total, db)
+make_top_songs(month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", f"in {month}", month_total, db)
 
 txt.write(f"\n{display_name}, {today_str}")
 
@@ -285,7 +293,7 @@ txt.close()
 pdf = open(f"{home_path}/analysis/part.tex", "w")
 
 make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", "today", today_total, db)
-make_formatted_top_songs(month_topsongs, pdf, "This Month's Top Songs", "this month", month_total, db)
+make_formatted_top_songs(month_topsongs, pdf, f"{month_str}'s Top Songs", f"in {month_str}", month_total, db)
 
 # ========== USER INFO AT BOTTOM OF PDF
 
@@ -294,12 +302,15 @@ urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
 # make image a circle
 make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp.png")
 
+# get user url
+user_url = me["external_urls"]["spotify"]
+
 # print image, date, user name to file
 pdf.write("\\vfill\\raggedleft\n")
 pdf.write("\\begin{minipage}{.47\\textwidth}\n")
 pdf.write("\\raggedleft")
 pdf.write("\\begin{minipage}{.75\\textwidth}\n")
-pdf.write("\\raggedleft\\large \\textbf{" + f"{display_name}" +  "}\\\\[2pt]\n")
+pdf.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
 # pdf.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
 pdf.write(f"\\normalsize {today_str}")
 pdf.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
@@ -318,6 +329,7 @@ os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/a
 # delte auxillary files
 os.system(f"rm {home_path}/analysis/analysis.aux")
 os.system(f"rm {home_path}/analysis/analysis.log")
+os.system(f"rm {home_path}/analysis/analysis.out")
 os.system(f"rm {home_path}/analysis/*.jpg")
 os.system(f"rm {home_path}/analysis/*.png")
 os.system(f"rm {home_path}/analysis/part.tex")
