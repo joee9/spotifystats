@@ -13,6 +13,7 @@ from dateutil import parser
 #system related
 import os
 import sys
+import json
 
 # misc
 import pandas as pd
@@ -50,18 +51,18 @@ def start_of_day_est(dto):
     """
     return dto.astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
 
-def format_artist_names(track_info):
+def format_artist_names(artists):
     """
     track_info: insert spotify track object; returns formatted string of the artist names
     """
-    artists = track_info["album"]["artists"]
+    # artists = track_info["album"]["artists"]
     num_artists = len(artists)
     artist_names = ""
 
     for i in range(num_artists):
         if i == num_artists-1:
-            artist_names += artists[i]['name']
-        else: artist_names += artists[i]['name'] + ", "
+            artist_names += artists[i]
+        else: artist_names += artists[i] + ", "
 
     return artist_names
 
@@ -78,14 +79,37 @@ def make_counts(df, start, end):
     
     return songs["ID"].value_counts()
 
-def sort_songs(counts):
+def get_song_info(db, id):
+    if id in db:
+        return db[id]
+
+    track = sp.track(id)
+    artist_ids = []
+    artist_names = []
+    for artist in track["album"]["artists"]:
+        artist_ids.append(artist["id"])
+        artist_names.append(artist["name"])
+    name = track["name"]
+    pic_url = track["album"]["images"][1]["url"]
+
+    db[id] = {"name": name,
+        "ArtistIDs": artist_ids,
+        "ArtistNames": artist_names,
+        "PicURL": pic_url
+    }
+
+    return db[id]
+    
+
+def sort_songs(counts, db):
 
     keys = counts.keys()
     if len(keys) > 25: keys = keys[0:25] # only sort first 25 keys
 
     sorted = []
     for key in keys:
-        name = sp.track(key)["name"]
+        name = get_song_info(db, key)["name"]
+        # name = sp.track(key)["name"]
         sorted.append({"name": name, "ID": key, "count": counts[key]})
 
     def sort_by_name(d): return -d["count"], d["name"]
@@ -94,7 +118,7 @@ def sort_songs(counts):
     return sorted
 
 
-def make_top_songs(songs, file, message, tag, total):
+def make_top_songs(songs, file, message, tag, total, db):
     """
     prints out the top songs for a given pd.series containing counts
     """
@@ -104,17 +128,18 @@ def make_top_songs(songs, file, message, tag, total):
 
     for song in songs:
         id = song["ID"]
-        track_info = sp.track(id)
+        track_info = get_song_info(db, id)
+        # track_info = sp.track(id)
         name = song["name"]
         count = song["count"]
 
-        artist_names = format_artist_names(track_info)
+        artist_names = format_artist_names(track_info["ArtistNames"])
     
         file.write(f"{count:3d}  {name}, by {artist_names}\n")
     
     file.write(f"Total songs played {tag}: {total}\n")
 
-def make_formatted_top_songs(songs, file, message, tag, total):
+def make_formatted_top_songs(songs, file, message, tag, total, db):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -143,11 +168,12 @@ def make_formatted_top_songs(songs, file, message, tag, total):
         
         id = song["ID"]
         # get information to write
-        track_info = sp.track(id)
-        urlretrieve(track_info["album"]["images"][1]["url"], f"{home_path}/analysis/{t}{i}.jpg")
+        # track_info = sp.track(id)
+        track_info = get_song_info(db, id)
+        urlretrieve(track_info["PicURL"], f"{home_path}/analysis/{t}{i}.jpg")
         name = track_info["name"]
         count = f"({song['count']}) "
-        artist_names = count + format_artist_names(track_info)
+        artist_names = count + format_artist_names(track_info["ArtistNames"])
 
         # replace latex special characters
         if "&" in name: name = name.replace("&", "\&")
@@ -209,12 +235,19 @@ today_str = datetime.strftime(day,"%B %d, %Y")
 # get relevant series and dfs
 songs = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
 
+# get local song database
+if os.path.exists(f"{home_path}/data/database.txt"):
+    with open(f"{home_path}/data/database.txt","r") as f:
+        db = json.loads(f.read())
+
+else: db = {}
+
 today_cts = make_counts(songs, day, eod)
-today_topsongs = sort_songs(today_cts)
+today_topsongs = sort_songs(today_cts, db)
 today_total = today_cts.sum()
 
 month_cts = make_counts(songs, month, eod)
-month_topsongs = sort_songs(month_cts)
+month_topsongs = sort_songs(month_cts, db)
 month_total = month_cts.sum()
 
 # ========== write to file
@@ -227,9 +260,9 @@ display_name = me["display_name"]
 # textfile
 txt = open(f"{home_path}/analysis/analysis.txt", "w")
 
-make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", "today", today_total)
+make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", "today", today_total, db)
 txt.write("\n")
-make_top_songs(month_topsongs, txt, "THIS MONTH'S TOP SONGS", "this month", month_total)
+make_top_songs(month_topsongs, txt, "THIS MONTH'S TOP SONGS", "this month", month_total, db)
 
 txt.write(f"\n{display_name}, {today_str}")
 
@@ -239,8 +272,8 @@ txt.close()
 # pdf
 pdf = open(f"{home_path}/analysis/part.tex", "w")
 
-make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", "today", today_total)
-make_formatted_top_songs(month_topsongs, pdf, "This Month's Top Songs", "this month", month_total)
+make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", "today", today_total, db)
+make_formatted_top_songs(month_topsongs, pdf, "This Month's Top Songs", "this month", month_total, db)
 
 # ========== USER INFO AT BOTTOM OF PDF
 
@@ -274,6 +307,10 @@ pdf.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysi
 pdf.write("\\end{minipage}\\end{minipage}\n")
 
 pdf.close()
+
+# write updated database
+with open(f"{home_path}/data/database.txt","w") as output:
+    output.write(json.dumps(db))
 
 # compile and delete auxillary files
 os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")

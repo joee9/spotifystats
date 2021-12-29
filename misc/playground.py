@@ -13,6 +13,8 @@ from urllib.request import urlretrieve
 
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path
 
+import json
+
 path = home_path
 python = python_path
 
@@ -71,21 +73,39 @@ path = f"{home_path}/data"
 df = pd.read_csv(path + f"/{my}-songlist.txt")
 
 if not exists(f"{path}/{my}-database.txt"):
-    db = pd.DataFrame(columns = ["URI", "name", "ArtistURIs", "ArtistNames", "PicURL"])
+    # db = pd.DataFrame(columns = ["ID", "name", "ArtistIDs", "ArtistNames", "PicURL"])
+    db = {}
 
 else:
-    db = pd.read_csv(f"{path}/{my}-database.txt")
-
-db.set_index("URI")
+    with open(f"{path}/{my}-database.txt", "r") as f:
+        db = json.loads(f.read())
 
 for song in rp["items"]:
-    uri = song["URI"]
-    if db.contains(uri):
-        track = db[uri]
+    id = song["track"]["id"]
+    if id in db:
+        name = db[id]["name"]
+        artist_ids = db[id]["ArtistIDs"]
+        artist_names = db[id]["ArtistNames"]
+        pic_url = db[id]["PicURL"]
     else:
-        track = sp.track(uri)
-        artist_uri = []
-        db.append([], index=uri)
+        track = sp.track(id)
+        artist_ids = []
+        artist_names = []
+        for artist in track["album"]["artists"]:
+            artist_ids.append(artist["id"])
+            artist_names.append(artist["name"])
+        name = track["name"]
+        pic_url = track["album"]["images"][1]["url"]
+
+        # db = db.append([[id, name, artist_ids, artist_names, pic_url]], columns=)
+        db[id] = {"name": name,
+            "ArtistIDs": artist_ids,
+            "ArtistNames": artist_names,
+            "PicURL": pic_url
+        }
+
+with open(f"{path}/{my}-database.txt","a") as output:
+    output.write(json.dumps(db))
 
 
 # counts = df["URI"].value_counts()
