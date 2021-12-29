@@ -249,8 +249,8 @@ today_str = datetime.strftime(day,"%B %d, %Y")
 songs = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
 
 # get local song database
-if os.path.exists(f"{home_path}/data/database.txt"):
-    with open(f"{home_path}/data/database.txt","r") as f:
+if os.path.exists(f"{home_path}/data/{my}-database.txt"):
+    with open(f"{home_path}/data/{my}-database.txt","r") as f:
         db = json.loads(f.read())
 else: db = {}
 
@@ -310,7 +310,7 @@ pdf.write("\\end{minipage}\\end{minipage}\n")
 pdf.close()
 
 # write updated database
-with open(f"{home_path}/data/database.txt","w") as output:
+with open(f"{home_path}/data/{my}-database.txt","w") as output:
     output.write(json.dumps(db))
 
 # compile and delete auxillary files

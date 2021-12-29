@@ -8,7 +8,7 @@
 
 1. Sign up to be a spotify developer and create a personal app. From here, you can get the user specific information needed below. Make sure to set redirect URL to http://localhost:7777/callback . *This section unfinished*
 
-2. Create the `./data/` directory. This is where the song databases will live (`./data/mm-yyyy-songlist.txt`).
+2. Create the `./data/` directory. This is where the song databases will live (`./data/mm-yyyy-songlist.txt`). Also, this is where the local song information databases will live (`./data/mm-yyyy-database.txt`). See Outline for explanation.
 
 3. Modify the path within `./analysis/analysis.tex` such that it points to your specific `./analysis/` directory. Currently, it points to my personal directory.
 
@@ -31,7 +31,7 @@
 
 There are three important files:
 - `get_rp.py`: "gets recently played" songs. The file adds the user's recently played songs to the current month's database.
-- `analysis.py`: using the database, creates a LaTeX generated .pdf and a .txt file with the top ten songs from the day and month and places them in `./analysis/analysis.*`.
+- `analysis.py`: using the database, creates a LaTeX generated .pdf and a .txt file with the top ten songs from the day and month and places them in `./analysis/analysis.*`. *New*: creates and extends a local song database each month, saving pertinent reused information, such as the song name, artists names and artist ID's, and the URL for the album artwork. This database is not essential (i.e. the file can be deleted and will be reproduced) but its existence will make the program much faster, as the analysis can check and see if the data is stored locally, and only access Spotify's servers to grab the information if necessary (after accessing, this data is then stored locally for future use).
 - `send_analysis.py`: sends the .txt and .pdf files via email using the addresses within `secrets.py.` This file also backs up the current database to the `gd_path` directory, as well as the .txt file to the `analyses` directory within the `gd_path` directory. Running this file on its own will call `analysis.py`. The command line argument `y` will create the analysis for yesterday.
 
 ## Automation
