@@ -66,6 +66,20 @@ def format_artist_names(artists):
 
     return artist_names
 
+def make_image_circular(input_path, output_path):
+    img = Image.open(input_path)
+    height,width = img.size
+    lum_img = Image.new('L', [height,width] , 0)
+
+    draw = ImageDraw.Draw(lum_img)
+    draw.pieslice([(0,0), (height,width)], 0, 360, fill = 255, outline = "white")
+    img_arr = np.array(img)
+    lum_img_arr = np.array(lum_img)
+    final_img_arr = np.dstack((img_arr,lum_img_arr))
+
+    img = Image.fromarray(final_img_arr)
+    img.save(output_path)
+
 def make_counts(df, start, end):
     """
     Given a dataframe, a starting date and an ending date (both datetime objects), return a data frame of the value counts for song ids
@@ -278,18 +292,7 @@ make_formatted_top_songs(month_topsongs, pdf, "This Month's Top Songs", "this mo
 # get profile photo
 urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
 # make image a circle
-img = Image.open(f"{home_path}/analysis/pp.jpg")
-height,width = img.size
-lum_img = Image.new('L', [height,width] , 0)
-
-draw = ImageDraw.Draw(lum_img)
-draw.pieslice([(0,0), (height,width)], 0, 360, fill = 255, outline = "white")
-img_arr = np.array(img)
-lum_img_arr = np.array(lum_img)
-final_img_arr = np.dstack((img_arr,lum_img_arr))
-
-img = Image.fromarray(final_img_arr)
-img.save(f"{home_path}/analysis/circpp.png")
+make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp.png")
 
 # print image, date, user name to file
 pdf.write("\\vfill\\raggedleft\n")
