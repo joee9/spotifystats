@@ -80,23 +80,22 @@ def make_counts(df, start, end):
     return songs["ID"].value_counts()
 
 def get_song_info(db, id):
-    if id in db:
-        return db[id]
+    if not id in db:
+        track = sp.track(id)
+        artist_ids = []
+        artist_names = []
+        for artist in track["album"]["artists"]:
+            artist_ids.append(artist["id"])
+            artist_names.append(artist["name"])
+        name = track["name"]
+        pic_url = track["album"]["images"][1]["url"]
 
-    track = sp.track(id)
-    artist_ids = []
-    artist_names = []
-    for artist in track["album"]["artists"]:
-        artist_ids.append(artist["id"])
-        artist_names.append(artist["name"])
-    name = track["name"]
-    pic_url = track["album"]["images"][1]["url"]
-
-    db[id] = {"name": name,
-        "ArtistIDs": artist_ids,
-        "ArtistNames": artist_names,
-        "PicURL": pic_url
-    }
+        # adds this entry to the database for future reference
+        db[id] = {"name": name,
+            "ArtistIDs": artist_ids,
+            "ArtistNames": artist_names,
+            "PicURL": pic_url
+        }
 
     return db[id]
     
