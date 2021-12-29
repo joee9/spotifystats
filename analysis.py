@@ -239,7 +239,6 @@ songs = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
 if os.path.exists(f"{home_path}/data/database.txt"):
     with open(f"{home_path}/data/database.txt","r") as f:
         db = json.loads(f.read())
-
 else: db = {}
 
 today_cts = make_counts(songs, day, eod)
