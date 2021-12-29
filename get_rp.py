@@ -48,7 +48,7 @@ if exists(path): # if monthly file already exists
 
 else:
     new_month = True
-    df = pd.DataFrame(columns = ["URI", "Timestamp"])
+    df = pd.DataFrame(columns = ["ID", "Timestamp"])
     latest_time = datetime.today().astimezone(est).replace(day=1,second=0,minute=0,hour=0,microsecond=1)
 
 # get recently played songs
@@ -93,13 +93,13 @@ else:
 # add appropriate songs to df
 for i in range(idx, lim+1):
 
-    track_uri = recently_played["items"][lim - i]["track"]["uri"]
+    track_id = recently_played["items"][lim - i]["track"]["id"]
     track_ts = recently_played["items"][lim - i]["played_at"]
 
     # only add if in this month
     if parser.parse(track_ts) > earliest_time:
         df = df.append({
-            "URI": track_uri,
+            "ID": track_id,
             "Timestamp": track_ts
         }, ignore_index=True)
 

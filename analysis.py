@@ -69,14 +69,14 @@ def make_counts(df, start, end):
     """
     Given a dataframe, a starting date and an ending date (both datetime objects), return a data frame of the value counts for song ids
     """
-    songs = pd.DataFrame(columns=["URI","Timestamp"])
+    songs = pd.DataFrame(columns=["ID","Timestamp"])
     for i in range(len(df)):
         timestamp = df.iloc[i,1]
         parsed = parser.parse(timestamp).astimezone(est)
         if  parsed > start and parsed < end:
             songs = songs.append(df.iloc[i,:])
     
-    return songs["URI"].value_counts()
+    return songs["ID"].value_counts()
 
 def sort_songs(counts):
 
@@ -86,7 +86,7 @@ def sort_songs(counts):
     sorted = []
     for key in keys:
         name = sp.track(key)["name"]
-        sorted.append({"name": name, "URI": key, "count": counts[key]})
+        sorted.append({"name": name, "ID": key, "count": counts[key]})
 
     def sort_by_name(d): return -d["count"], d["name"]
 
@@ -103,7 +103,7 @@ def make_top_songs(songs, file, message, tag, total):
     file.write(message + "\n")
 
     for song in songs:
-        id = song["URI"]
+        id = song["ID"]
         track_info = sp.track(id)
         name = song["name"]
         count = song["count"]
@@ -141,7 +141,7 @@ def make_formatted_top_songs(songs, file, message, tag, total):
 
     def write(song):
         
-        id = song["URI"]
+        id = song["ID"]
         # get information to write
         track_info = sp.track(id)
         urlretrieve(track_info["album"]["images"][1]["url"], f"{home_path}/analysis/{t}{i}.jpg")

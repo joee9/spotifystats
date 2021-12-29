@@ -8,8 +8,8 @@ from dateutil import parser
 from dateutil.tz import tzutc
 import sys
 import os
+from os.path import exists
 from urllib.request import urlretrieve
-from pdf_analysis import make_formatted_top_songs
 
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path
 
@@ -40,6 +40,8 @@ sp = spotipy.Spotify(auth=token)
 # rp = sp.current_user_top_artists(limit = 50)
 rp = sp.current_user_recently_played(limit = 50)
 
+print(rp["items"][0])
+
 # %%
 me = sp.current_user()
 urlretrieve(me["images"][0]["url"],"myprofilepic.jpg")
@@ -65,28 +67,48 @@ img.save("circprofilepic.png")
 # %%
 
 my = "12-2021"
-path = f"{home_path}/data/{my}-recentlyplayed.txt"
-df = pd.read_csv(path)
+path = f"{home_path}/data"
+df = pd.read_csv(path + f"/{my}-songlist.txt")
 
-counts = df["URI"].value_counts()
-keys = counts.keys()[0:10]
+if not exists(f"{path}/{my}-database.txt"):
+    db = pd.DataFrame(columns = ["URI", "name", "ArtistURIs", "ArtistNames", "PicURL"])
 
-sorted = []
-for key in keys:
-    name = sp.track(key)["name"]
-    sorted.append({"name": name, "URI": key, "count": counts[key]})
+else:
+    db = pd.read_csv(f"{path}/{my}-database.txt")
 
-def sort_by_name(d): return -d["count"], d["name"]
+db.set_index("URI")
 
-sorted.sort(key=sort_by_name)
+for song in rp["items"]:
+    uri = song["URI"]
+    if db.contains(uri):
+        track = db[uri]
+    else:
+        track = sp.track(uri)
+        artist_uri = []
+        db.append([], index=uri)
 
-sorted_keys = []
-for entry in sorted:
-    sorted_keys.append(entry["URI"])
 
-print(sorted, sorted_keys)
+# counts = df["URI"].value_counts()
+# keys = counts.keys()[0:10]
+
+# sorted = []
+# for key in keys:
+#     name = sp.track(key)["name"]
+#     sorted.append({"name": name, "URI": key, "count": counts[key]})
+
+# def sort_by_name(d): return -d["count"], d["name"]
+
+# sorted.sort(key=sort_by_name)
+
+# sorted_keys = []
+# for entry in sorted:
+#     sorted_keys.append(entry["URI"])
+
+# print(sorted, sorted_keys)
 
 
 
 
 # %%
+uri = "4T6FWA703h6H7zk1FoSARw"
+track = sp.track(uri)
