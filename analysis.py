@@ -282,7 +282,7 @@ txt = open(f"{home_path}/analysis/analysis.txt", "w")
 
 make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", "today", today_total, db)
 txt.write("\n")
-make_top_songs(month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", f"in {month}", month_total, db)
+make_top_songs(month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", f"in {month_str}", month_total, db)
 
 txt.write(f"\n{display_name}, {today_str}")
 
