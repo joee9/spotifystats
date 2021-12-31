@@ -1,5 +1,6 @@
 ./data/*
 *.txt
+*.jpg
 *.cache*
 secrets.*
 __pychache__/*

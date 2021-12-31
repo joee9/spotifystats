@@ -10,7 +10,7 @@
 
 2. Create the `./data/` directory. This is where the song databases will live (`./data/mm-yyyy-songlist.txt`). Also, this is where the local song information databases will live (`./data/mm-yyyy-database.txt`). See Outline for explanation.
 
-3. Modify the path within `./analysis/analysis.tex` such that it points to your specific `./analysis/` directory. Currently, it points to my personal directory.
+3. Modify the path within `./analysis/analysis.tex` such that it points to your specific `./analysis/` directory. Currently, it points to my personal directory. Also, create the `./analysis/images/` directory, were album images will be stored. This is a local image database that is not necessary, but will greatly speed up the production of the analyses.
 
 4. Create the `./secrets.py` file. This contains user specific information; it should contain these variables:
     - Spotify specific:

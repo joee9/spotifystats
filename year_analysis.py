@@ -107,6 +107,13 @@ def get_song_info(db, id):
         }
 
     return db[id]
+
+def get_image(track_info):
+    album_id = track_info["AlbumID"]
+    im_path = f"{home_path}/analysis/images/{album_id}.jpg"
+    if not os.path.exists(im_path):
+        urlretrieve(track_info["PicURL"], im_path)
+    return im_path
     
 
 def sort_songs(counts, db, num = 25):
@@ -170,13 +177,14 @@ def make_formatted_top_songs(songs, file, message, tag, total, db, t="y", size=1
     file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
-    def write(song, i):
+    def write(song):
         
         id = song["ID"]
         # get information to write
         # track_info = sp.track(id)
         track_info = get_song_info(db, id)
-        urlretrieve(track_info["PicURL"], f"{home_path}/analysis/{t}{i}.jpg")
+        # urlretrieve(track_info["PicURL"], f"{home_path}/analysis/{t}{i}.jpg")
+        pic_path = get_image(track_info)
         name = track_info["name"]
         count = f"({song['count']}) "
         artist_names = count + format_artist_names(track_info["ArtistNames"])
@@ -191,7 +199,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db, t="y", size=1
         if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + f"{home_path}/analysis/{t}{i}" + ".jpg}}\n")
+        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
         file.write("\\begin{minipage}{.75\\textwidth}\n")
         file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
@@ -202,7 +210,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db, t="y", size=1
     upp = size//2
     if len(songs) < upp: upp = len(songs)
     for i in range(upp):
-        write(songs[i], i)
+        write(songs[i])
 
     file.write("\\end{minipage}\\hfill%\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
@@ -211,7 +219,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db, t="y", size=1
         upp = size 
         if len(songs) < upp: upp = len(songs)
         for i in range(size//2,upp):
-            write(songs[i], i)
+            write(songs[i])
     
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
