@@ -1,6 +1,8 @@
-# Joe Nyhan, 26 December 2021
-# Produces a LaTeX generated .pdf and .txt file with top songs of the day and month
+# Joe Nyhan, 31 December 2021
+# Prints out top songs from each month, as well as the top songs from the current year
+
 #%%
+
 # spotify libraries
 import spotipy.util as util
 import spotipy
@@ -32,24 +34,11 @@ token = util.prompt_for_user_token(username=username, scope=scope, client_id=cli
 
 sp = spotipy.Spotify(auth=token)
 
-yesterday = False
-otherday = ""
+yyyy = 2022
 if len(sys.argv) == 2:
-        if sys.argv[1] == "y": yesterday = True
-        else: 
-            # otherday = sys.argv[1]
-            # TODO: implement a way to standardize adding any date to allow for an analysis for any date
-            pass
-
-#%% 
+        yyyy = sys.argv[1]
 
 # ========== USEFUL FUNCTIONS
-
-def start_of_day_est(dto):
-    """
-    given a datetime object, returns a datetime object corresponding to the very beginning of the inputted day in EST
-    """
-    return dto.astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
 
 def format_artist_names(artists):
     """
@@ -120,10 +109,10 @@ def get_song_info(db, id):
     return db[id]
     
 
-def sort_songs(counts, db):
+def sort_songs(counts, db, num = 25):
 
     keys = counts.keys()
-    if len(keys) > 25: keys = keys[0:25] # only sort first 25 keys
+    if len(keys) > num: keys = keys[0:num] # only sort first 25 keys
 
     sorted = []
     for key in keys:
@@ -158,7 +147,7 @@ def make_top_songs(songs, file, message, tag, total, db):
     
     file.write(f"Total songs played {tag}: {total}\n")
 
-def make_formatted_top_songs(songs, file, message, tag, total, db):
+def make_formatted_top_songs(songs, file, message, tag, total, db, t="y", size=10):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -166,19 +155,17 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
     total = str(total)
     if len(total) == 4:
         total = total[0] + "," + total[1:]
+    elif len(total) == 5:
+        total = total[:2] + "," + total[2:]
 
     ltf = False
 
-    if len(songs) < 5:
+    if len(songs) < size//2:
         ltf = True
 
-    if len(songs) > 10:
-        songs = songs[0:10]   
-
-    if tag == "today":
-        t = "d"
-    else:
-        t = "m"
+    if len(songs) > size:
+        songs = songs[0:size]   
+    
 
     file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
@@ -212,7 +199,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
         file.write("\\end{minipage}\\\\[5pt]\n")
         file.write("\n")
 
-    upp = 5
+    upp = size//2
     if len(songs) < upp: upp = len(songs)
     for i in range(upp):
         write(songs[i], i)
@@ -221,81 +208,18 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
     file.write("\\begin{minipage}{.47\\textwidth}\n")
     
     if not ltf:
-        upp = 10 
+        upp = size 
         if len(songs) < upp: upp = len(songs)
-        for i in range(5,upp):
+        for i in range(size//2,upp):
             write(songs[i], i)
     
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
 
-
-
-# ========== MAKE DATAFRAMES, COUNTS, ETC.
-
-# get datetime of "today", the day in question
-day = start_of_day_est(datetime.today())
-
-if yesterday: 
-    day = day - timedelta(days = 1)
-elif otherday != "": 
-    day = start_of_day_est(parser.parse(otherday))
-
-# end of day is one day later than the day object
-eod = day + timedelta(days=1)
-
-# get DTO of the beginning of the current month
-m = int(datetime.strftime(day, "%m"))
-month = day.replace(month = m, day = 1)
-
-# get a string for the date, e.g. 12-2021
-my = datetime.strftime(day, "%m-%Y")
-month_str = datetime.strftime(month, "%B")
-today_str = datetime.strftime(day,"%B %d, %Y")
-
-# get relevant series and dfs
-songs = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
-
-# get local song database
-if os.path.exists(f"{home_path}/data/{my}-database.txt"):
-    with open(f"{home_path}/data/{my}-database.txt","r") as f:
-        db = json.loads(f.read())
-else: db = {}
-
-today_cts = make_counts(songs, day, eod)
-today_topsongs = sort_songs(today_cts, db)
-today_total = today_cts.sum()
-
-month_cts = make_counts(songs, month, eod)
-month_topsongs = sort_songs(month_cts, db)
-month_total = month_cts.sum()
-
-# ========== write to file
-
-# user information
+#%%
+# ========== USER INFORMATION
 me = sp.current_user()
 display_name = me["display_name"]
-
-
-# textfile
-txt = open(f"{home_path}/analysis/analysis.txt", "w")
-
-make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", "today", today_total, db)
-txt.write("\n")
-make_top_songs(month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", f"in {month_str}", month_total, db)
-
-txt.write(f"\n{display_name}, {today_str}")
-
-txt.close()
-
-
-# pdf
-pdf = open(f"{home_path}/analysis/part.tex", "w")
-
-make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", "today", today_total, db)
-make_formatted_top_songs(month_topsongs, pdf, f"{month_str}'s Top Songs", f"in {month_str}", month_total, db)
-
-# ========== USER INFO AT BOTTOM OF PDF
 
 # get profile photo
 urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
@@ -305,26 +229,67 @@ make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp
 # get user url
 user_url = me["external_urls"]["spotify"]
 
-# print image, date, user name to file
-pdf.write("\\vfill\\raggedleft\n")
-pdf.write("\\begin{minipage}{.47\\textwidth}\n")
-pdf.write("\\raggedleft")
-pdf.write("\\begin{minipage}{.75\\textwidth}\n")
-pdf.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
-# pdf.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
-pdf.write(f"\\normalsize {today_str}")
-pdf.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-pdf.write("\\begin{minipage}{.2\\textwidth}\n")
-pdf.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
-pdf.write("\\end{minipage}\\end{minipage}\n")
+def make_user_stamp(i, file):
+    if i % 2 == 0: return
+    file.write("\\vfill\\raggedleft\n")
+    file.write("\\begin{minipage}{.47\\textwidth}\n")
+    file.write("\\raggedleft")
+    file.write("\\begin{minipage}{.75\\textwidth}\n")
+    file.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
+    file.write(f"\\normalsize Yearly Recap: {yyyy}")
+    file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+    file.write("\\begin{minipage}{.2\\textwidth}\n")
+    file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
+    file.write("\\end{minipage}\\end{minipage}\n")
+    file.write("\\newpage\n")
+    
+# ========== CREATE DATA FRAMES FOR EACH MONTH
+
+all_songs = pd.DataFrame(columns=["ID","Timestamp"])
+large_db = {}
+months = []
+
+for mm in range(1,13):
+
+    path = f"{home_path}/data/{mm}-{yyyy}"
+    if os.path.exists(f"{path}-songlist.txt"):
+        df = pd.read_csv(f"{path}-songlist.txt")
+        all_songs = pd.concat([all_songs,df])
+        months.append(mm)
+    
+    if os.path.exists(f"{path}-database.txt"):
+        with open(f"{path}-database.txt","r") as f:
+            db = json.loads(f.read())
+            large_db.update(db)
+
+
+pdf = open(f"{home_path}/analysis/part.tex", "w")
+
+# do yearly stats first
+year_cts = all_songs["ID"].value_counts()
+year_topsongs = sort_songs(year_cts, large_db, num=50)
+year_total = year_cts.sum()
+
+make_formatted_top_songs(year_topsongs, pdf, f"{yyyy}'s Top Songs", f"in {yyyy}", year_total, large_db, size = 20)
+make_user_stamp(1,pdf)
+
+for i in range(len(months)):
+    mm = months[i]
+    tag = datetime.strftime(datetime.today().replace(month =mm, day=1), "%B")
+    path = f"{home_path}/data/{mm}-{yyyy}"
+    df = pd.read_csv(f"{path}-songlist.txt")
+    pic_str = f"m{i}-"
+
+    m_cts = df["ID"].value_counts()
+    m_topsongs = sort_songs(m_cts, large_db)
+    m_total = m_cts.sum()
+
+    make_formatted_top_songs(m_topsongs, pdf, f"{tag}'s Top Songs", f"in {tag}", m_total, large_db, t=pic_str)
+    make_user_stamp(i,pdf)
+
 
 pdf.close()
 
-# write updated database
-with open(f"{home_path}/data/{my}-database.txt","w") as output:
-    output.write(json.dumps(db))
-
-# compile and delete auxillary files
 os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
 # delte auxillary files
 os.system(f"rm {home_path}/analysis/analysis.aux")

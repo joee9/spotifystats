@@ -132,3 +132,11 @@ with open(f"{path}/{my}-database.txt","a") as output:
 # %%
 uri = "4T6FWA703h6H7zk1FoSARw"
 track = sp.track(uri)
+
+#%%
+d1 = {"a": 1, "b": 2}
+d2 = {"a": 3, "d": 4}
+
+d1.update(d2)
+
+print(d1)

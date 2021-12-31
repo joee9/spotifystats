@@ -27,6 +27,7 @@ if len(sys.argv) == 2 and sys.argv[1] == "y":
 s = datetime.strftime(today, "%Y-%m%d")
 sf = datetime.strftime(today, "%B %d, %Y")
 my = datetime.strftime(today,"%m-%Y")
+yyyy = datetime.strftime(today,"%Y")
 
 port = 465  # For SSL
 
@@ -80,3 +81,8 @@ with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
     server.sendmail(sender, sendee.split(", ") + cc.split(", "), m.as_string())
 
 
+# update yearly recap
+
+os.system(f"{python_path} {path}/year_analysis.py {yyyy} >> {path}/output.txt")
+os.system(f"rm {path}/output.txt")
+os.system(f"cp {path}/analysis/analysis.pdf {gd_path}/{yyyy}-recap.pdf")
