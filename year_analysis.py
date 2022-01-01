@@ -152,9 +152,9 @@ def make_top_songs(songs, file, message, tag, total, db):
     
         file.write(f"{count:3d}  {name}, by {artist_names}\n")
     
-    file.write(f"Total songs played {tag}: {total}\n")
+    file.write(f"Total songs played: {total}\n")
 
-def make_formatted_top_songs(songs, file, message, tag, total, db, t="y", size=10):
+def make_formatted_top_songs(songs, file, message, total, db, t="y", size=10):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -174,7 +174,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db, t="y", size=1
         songs = songs[0:size]   
     
 
-    file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
+    file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
     def write(song):
@@ -278,7 +278,7 @@ year_cts = all_songs["ID"].value_counts()
 year_topsongs = sort_songs(year_cts, large_db, num=60)
 year_total = year_cts.sum()
 
-make_formatted_top_songs(year_topsongs, pdf, f"{yyyy}'s Top Songs", f"in {yyyy}", year_total, large_db, size = 22)
+make_formatted_top_songs(year_topsongs, pdf, f"{yyyy}'s Top Songs", year_total, large_db, size = 22)
 make_user_stamp(1,pdf)
 
 for i in range(len(months)):
@@ -292,7 +292,7 @@ for i in range(len(months)):
     m_topsongs = sort_songs(m_cts, large_db)
     m_total = m_cts.sum()
 
-    make_formatted_top_songs(m_topsongs, pdf, f"{tag}'s Top Songs", f"in {tag}", m_total, large_db, t=pic_str)
+    make_formatted_top_songs(m_topsongs, pdf, f"{tag}'s Top Songs", m_total, large_db, t=pic_str)
     make_user_stamp(i,pdf)
 
 

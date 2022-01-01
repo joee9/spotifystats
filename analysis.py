@@ -146,7 +146,7 @@ def sort_songs(counts, db):
     return sorted
 
 
-def make_top_songs(songs, file, message, tag, total, db):
+def make_top_songs(songs, file, message, total, db):
     """
     prints out the top songs for a given pd.series containing counts
     """
@@ -165,9 +165,9 @@ def make_top_songs(songs, file, message, tag, total, db):
     
         file.write(f"{count:3d}  {name}, by {artist_names}\n")
     
-    file.write(f"Total songs played {tag}: {total}\n")
+    file.write(f"Total songs played: {total}\n")
 
-def make_formatted_top_songs(songs, file, message, tag, total, db):
+def make_formatted_top_songs(songs, file, message, total, db):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -184,12 +184,7 @@ def make_formatted_top_songs(songs, file, message, tag, total, db):
     if len(songs) > 10:
         songs = songs[0:10]   
 
-    if tag == "today":
-        t = "d"
-    else:
-        t = "m"
-
-    file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs {tag}: {total}" + "}\\\\[10pt]\n")
+    file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
     def write(song):
@@ -290,9 +285,9 @@ display_name = me["display_name"]
 # textfile
 txt = open(f"{home_path}/analysis/analysis.txt", "w")
 
-make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", "today", today_total, db)
+make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", today_total, db)
 txt.write("\n")
-make_top_songs(month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", f"in {month_str}", month_total, db)
+make_top_songs(month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", month_total, db)
 
 txt.write(f"\n{display_name}, {today_str}")
 
@@ -302,8 +297,8 @@ txt.close()
 # pdf
 pdf = open(f"{home_path}/analysis/part.tex", "w")
 
-make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", "today", today_total, db)
-make_formatted_top_songs(month_topsongs, pdf, f"{month_str}'s Top Songs", f"in {month_str}", month_total, db)
+make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", today_total, db)
+make_formatted_top_songs(month_topsongs, pdf, f"{month_str}'s Top Songs", month_total, db)
 
 # ========== USER INFO AT BOTTOM OF PDF
 
