@@ -246,7 +246,7 @@ def make_user_stamp(i, file):
     file.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
     file.write(f"\\normalsize Yearly Recap: {yyyy}")
     file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-    file.write("\\begin{minipage}{.2\\textwidth}\n")
+    file.write("\\begin{minipage}{.15\\textwidth}\n")
     file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
     file.write("\\end{minipage}\\end{minipage}\n")
     file.write("\\newpage\n")
@@ -275,10 +275,10 @@ pdf = open(f"{home_path}/analysis/part.tex", "w")
 
 # do yearly stats first
 year_cts = all_songs["ID"].value_counts()
-year_topsongs = sort_songs(year_cts, large_db, num=50)
+year_topsongs = sort_songs(year_cts, large_db, num=60)
 year_total = year_cts.sum()
 
-make_formatted_top_songs(year_topsongs, pdf, f"{yyyy}'s Top Songs", f"in {yyyy}", year_total, large_db, size = 20)
+make_formatted_top_songs(year_topsongs, pdf, f"{yyyy}'s Top Songs", f"in {yyyy}", year_total, large_db, size = 22)
 make_user_stamp(1,pdf)
 
 for i in range(len(months)):
