@@ -254,7 +254,7 @@ m = int(datetime.strftime(day, "%m"))
 month = day.replace(month = m, day = 1)
 
 # get a string for the date, e.g. 12-2021
-my = datetime.strftime(day, "%m-%Y")
+my = datetime.strftime(day, "%Y-%m")
 month_str = datetime.strftime(month, "%B")
 today_str = datetime.strftime(day,"%B %d, %Y")
 

@@ -237,8 +237,9 @@ make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp
 # get user url
 user_url = me["external_urls"]["spotify"]
 
-def make_user_stamp(i, file):
-    if i % 2 == 0: return
+def make_user_stamp(i, length, file):
+    if i == length -1: pass
+    elif i % 2 == 0: return
     file.write("\\vfill\\raggedleft\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
     file.write("\\raggedleft")
@@ -259,7 +260,7 @@ months = []
 
 for mm in range(1,13):
 
-    path = f"{home_path}/data/{mm}-{yyyy}"
+    path = f"{home_path}/data/{yyyy}-{mm:02d}"
     if os.path.exists(f"{path}-songlist.txt"):
         df = pd.read_csv(f"{path}-songlist.txt")
         all_songs = pd.concat([all_songs,df])
@@ -270,6 +271,7 @@ for mm in range(1,13):
             db = json.loads(f.read())
             large_db.update(db)
 
+#%%
 
 pdf = open(f"{home_path}/analysis/part.tex", "w")
 
@@ -279,12 +281,12 @@ year_topsongs = sort_songs(year_cts, large_db, num=60)
 year_total = year_cts.sum()
 
 make_formatted_top_songs(year_topsongs, pdf, f"{yyyy}'s Top Songs", year_total, large_db, size = 22)
-make_user_stamp(1,pdf)
+make_user_stamp(1,1,pdf)
 
 for i in range(len(months)):
     mm = months[i]
     tag = datetime.strftime(datetime.today().replace(month =mm, day=1), "%B")
-    path = f"{home_path}/data/{mm}-{yyyy}"
+    path = f"{home_path}/data/{yyyy}-{mm:02d}"
     df = pd.read_csv(f"{path}-songlist.txt")
     pic_str = f"m{i}-"
 
@@ -293,7 +295,7 @@ for i in range(len(months)):
     m_total = m_cts.sum()
 
     make_formatted_top_songs(m_topsongs, pdf, f"{tag}'s Top Songs", m_total, large_db, t=pic_str)
-    make_user_stamp(i,pdf)
+    make_user_stamp(i,len(months),pdf)
 
 
 pdf.close()

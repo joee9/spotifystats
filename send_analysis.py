@@ -26,7 +26,7 @@ if len(sys.argv) == 2 and sys.argv[1] == "y":
 
 s = datetime.strftime(today, "%Y-%m%d")
 sf = datetime.strftime(today, "%B %d, %Y")
-my = datetime.strftime(today,"%m-%Y")
+my = datetime.strftime(today,"%Y-%m")
 yyyy = datetime.strftime(today,"%Y")
 
 port = 465  # For SSL
@@ -39,7 +39,7 @@ path = home_path
 os.system(f"{python_path} {path}/get_rp.py > {path}/output.txt")
 os.system(f"{python_path} {path}/analysis.py{args} >> {path}/output.txt")
 os.system(f"rm {path}/output.txt")
-os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/{my}-songlist.txt")
+os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
 os.system(f"cp {path}/analysis/analysis.txt {gd_path}/analyses/{s}-analysis.txt")
 
 #%%

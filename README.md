@@ -8,7 +8,7 @@
 
 1. Sign up to be a spotify developer and create a personal app. From here, you can get the user specific information needed below. Make sure to set redirect URL to http://localhost:7777/callback . *This section unfinished*
 
-2. Create the `./data/` directory. This is where the song databases will live (`./data/mm-yyyy-songlist.txt`). Also, this is where the local song information databases will live (`./data/mm-yyyy-database.txt`). See Outline for explanation.
+2. Create the `./data/` directory. This is where the song databases will live (`./data/yyyy-mm-songlist.txt`). Also, this is where the local song information databases will live (`./data/yyyy-mm-database.txt`). See Outline for explanation.
 
 3. Modify the path within `./analysis/analysis.tex` such that it points to your specific `./analysis/` directory. Currently, it points to my personal directory. Also, create the `./analysis/images/` directory, were album images will be stored. This is a local image database that is not necessary, but will greatly speed up the production of the analyses; however, the path must be present for the program to function.
 
@@ -33,7 +33,7 @@ There are three important files:
 - `get_rp.py`: "gets recently played" songs. The file adds the user's recently played songs to the current month's database.
 - `analysis.py`: using the database, creates a LaTeX generated .pdf and a .txt file with the top ten songs from the day and month and places them in `./analysis/analysis.*`. *New*: creates and extends a local song database each month, saving pertinent reused information, such as the song name, artists names and artist ID's, and the URL for the album artwork. This database is not essential (i.e. the file can be deleted and will be reproduced) but its existence will make the program much faster, as the analysis can check and see if the data is stored locally, and only access Spotify's servers to grab the information if necessary (after accessing, this data is then stored locally for future use).
 - `send_analysis.py`: sends the .txt and .pdf files via email using the addresses within `secrets.py.` This file also backs up the current database to the `gd_path` directory, as well as the .txt file to the `analyses` directory within the `gd_path` directory. Running this file on its own will call `analysis.py`. The command line argument `y` will create the analysis for yesterday.
-- `yearly_recap.py`: this creates a yearly recap of the user's top 20 songs, as well as the top ten songs from each month of the given year. This is backed up to the user's `gd_path` and not sent to them via email. Automatically run when `send_analysis.py` is run.
+- `yearly_recap.py`: this creates a yearly recap of the user's top 20(ish) songs, as well as the top ten songs from each month of the given year. This is backed up to the user's `gd_path` and not sent to them via email. Automatically run when `send_analysis.py` is run.
 
 PDF Features: produced LaTeX .pdf contains the user's top ten songs for the current day and current month. Each song's accompanying album artwork is a hyperlink to the song on Spotify, and number next to it represents the number of times that song was played in the current timeframe. A user specific timestamp is placed in the bottom right of the document, with a hyperlink to the user's profile.
 
