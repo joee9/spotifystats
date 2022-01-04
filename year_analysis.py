@@ -35,9 +35,6 @@ def get_auth():
 
     return spotipy.Spotify(auth=token)
 
-
-# ========== USEFUL FUNCTIONS
-
 def format_artist_names(artists):
     """
     track_info: insert spotify track object; returns formatted string of the artist names
@@ -237,7 +234,7 @@ def make_user_stamp(i, length, file, user_url, display_name, yyyy):
     file.write("\\end{minipage}\\end{minipage}\n")
     file.write("\\newpage\n")
 
-#%%
+
 def main():
 
     sp = get_auth()
@@ -302,7 +299,6 @@ def main():
 
         make_formatted_top_songs(sp, m_topsongs, pdf, f"{tag}'s Top Songs", m_total, large_db, t=pic_str)
         make_user_stamp(i,len(months),pdf, user_url, display_name, yyyy)
-
 
     pdf.close()
 

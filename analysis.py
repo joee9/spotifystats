@@ -33,10 +33,6 @@ def get_auth():
 
     return spotipy.Spotify(auth=token)
 
-#%% 
-
-# ========== USEFUL FUNCTIONS
-
 def start_of_day_est(dto):
     """
     given a datetime object, returns a datetime object corresponding to the very beginning of the inputted day in EST
@@ -225,8 +221,6 @@ def make_formatted_top_songs(sp, songs, file, message, total, db):
     
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
-
-
 
 
 def main():

@@ -112,11 +112,11 @@ def get_rp_songs(sp, day):
     # copy to backup location
     os.system(f"cp {home_path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
 
-# ========== GET DAYS TO RUN (usually just today)
 
 def main():
     sp = get_auth()
 
+    # ========== GET DAYS TO RUN (usually just today)
     today = datetime.today().astimezone(est)
     yesterday = today - timedelta(days=1)
 
