@@ -26,17 +26,15 @@ from PIL import Image, ImageDraw
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
 
-redirect_uri = 'http://localhost:7777/callback'
-# scope = 'user-read-recently-played'
-scope = "user-top-read"
+def get_auth():
+    redirect_uri = 'http://localhost:7777/callback'
+    # scope = 'user-read-recently-played'
+    scope = "user-top-read"
 
-token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
 
-sp = spotipy.Spotify(auth=token)
+    return spotipy.Spotify(auth=token)
 
-yyyy = 2022
-if len(sys.argv) == 2:
-        yyyy = sys.argv[1]
 
 # ========== USEFUL FUNCTIONS
 
@@ -82,7 +80,7 @@ def make_counts(df, start, end):
     
     return songs["ID"].value_counts()
 
-def get_song_info(db, id):
+def get_song_info(sp, db, id):
     if not id in db:
         track = sp.track(id)
         artist_ids = []
@@ -116,14 +114,14 @@ def get_image(track_info):
     return im_path
     
 
-def sort_songs(counts, db, num = 25):
+def sort_songs(sp, counts, db, num = 25):
 
     keys = counts.keys()
     if len(keys) > num: keys = keys[0:num] # only sort first 25 keys
 
     sorted = []
     for key in keys:
-        name = get_song_info(db, key)["name"]
+        name = get_song_info(sp, db, key)["name"]
         # name = sp.track(key)["name"]
         sorted.append({"name": name, "ID": key, "count": counts[key]})
 
@@ -133,7 +131,7 @@ def sort_songs(counts, db, num = 25):
     return sorted
 
 
-def make_top_songs(songs, file, message, tag, total, db):
+def make_top_songs(sp, songs, file, message, tag, total, db):
     """
     prints out the top songs for a given pd.series containing counts
     """
@@ -143,7 +141,7 @@ def make_top_songs(songs, file, message, tag, total, db):
 
     for song in songs:
         id = song["ID"]
-        track_info = get_song_info(db, id)
+        track_info = get_song_info(sp, db, id)
         # track_info = sp.track(id)
         name = song["name"]
         count = song["count"]
@@ -154,7 +152,7 @@ def make_top_songs(songs, file, message, tag, total, db):
     
     file.write(f"Total songs played: {total}\n")
 
-def make_formatted_top_songs(songs, file, message, total, db, t="y", size=10):
+def make_formatted_top_songs(sp, songs, file, message, total, db, t="y", size=10):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -182,7 +180,7 @@ def make_formatted_top_songs(songs, file, message, total, db, t="y", size=10):
         id = song["ID"]
         # get information to write
         # track_info = sp.track(id)
-        track_info = get_song_info(db, id)
+        track_info = get_song_info(sp, db, id)
         # urlretrieve(track_info["PicURL"], f"{home_path}/analysis/{t}{i}.jpg")
         pic_path = get_image(track_info)
         name = track_info["name"]
@@ -224,20 +222,7 @@ def make_formatted_top_songs(songs, file, message, total, db, t="y", size=10):
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
 
-#%%
-# ========== USER INFORMATION
-me = sp.current_user()
-display_name = me["display_name"]
-
-# get profile photo
-urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
-# make image a circle
-make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp.png")
-
-# get user url
-user_url = me["external_urls"]["spotify"]
-
-def make_user_stamp(i, length, file):
+def make_user_stamp(i, length, file, user_url, display_name, yyyy):
     if i == length -1: pass
     elif i % 2 == 0: return
     file.write("\\vfill\\raggedleft\n")
@@ -251,61 +236,85 @@ def make_user_stamp(i, length, file):
     file.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
     file.write("\\end{minipage}\\end{minipage}\n")
     file.write("\\newpage\n")
-    
-# ========== CREATE DATA FRAMES FOR EACH MONTH
-
-all_songs = pd.DataFrame(columns=["ID","Timestamp"])
-large_db = {}
-months = []
-
-for mm in range(1,13):
-
-    path = f"{home_path}/data/{yyyy}-{mm:02d}"
-    if os.path.exists(f"{path}-songlist.txt"):
-        df = pd.read_csv(f"{path}-songlist.txt")
-        all_songs = pd.concat([all_songs,df])
-        months.append(mm)
-    
-    if os.path.exists(f"{path}-database.txt"):
-        with open(f"{path}-database.txt","r") as f:
-            db = json.loads(f.read())
-            large_db.update(db)
 
 #%%
+def main():
 
-pdf = open(f"{home_path}/analysis/part.tex", "w")
+    sp = get_auth()
 
-# do yearly stats first
-year_cts = all_songs["ID"].value_counts()
-year_topsongs = sort_songs(year_cts, large_db, num=60)
-year_total = year_cts.sum()
+    yyyy = 2022
+    if len(sys.argv) == 2:
+            yyyy = sys.argv[1]
 
-make_formatted_top_songs(year_topsongs, pdf, f"{yyyy}'s Top Songs", year_total, large_db, size = 22)
-make_user_stamp(1,1,pdf)
+    # ========== USER INFORMATION
+    me = sp.current_user()
+    display_name = me["display_name"]
 
-for i in range(len(months)):
-    mm = months[i]
-    tag = datetime.strftime(datetime.today().replace(month =mm, day=1), "%B")
-    path = f"{home_path}/data/{yyyy}-{mm:02d}"
-    df = pd.read_csv(f"{path}-songlist.txt")
-    pic_str = f"m{i}-"
+    # get profile photo
+    urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
+    # make image a circle
+    make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp.png")
 
-    m_cts = df["ID"].value_counts()
-    m_topsongs = sort_songs(m_cts, large_db)
-    m_total = m_cts.sum()
+    # get user url
+    user_url = me["external_urls"]["spotify"]
 
-    make_formatted_top_songs(m_topsongs, pdf, f"{tag}'s Top Songs", m_total, large_db, t=pic_str)
-    make_user_stamp(i,len(months),pdf)
+    # ========== CREATE DATA FRAMES FOR EACH MONTH
+
+    all_songs = pd.DataFrame(columns=["ID","Timestamp"])
+    large_db = {}
+    months = []
+
+    for mm in range(1,13):
+
+        path = f"{home_path}/data/{yyyy}-{mm:02d}"
+        if os.path.exists(f"{path}-songlist.txt"):
+            df = pd.read_csv(f"{path}-songlist.txt")
+            all_songs = pd.concat([all_songs,df])
+            months.append(mm)
+        
+        if os.path.exists(f"{path}-database.txt"):
+            with open(f"{path}-database.txt","r") as f:
+                db = json.loads(f.read())
+                large_db.update(db)
+
+    #%%
+
+    pdf = open(f"{home_path}/analysis/part.tex", "w")
+
+    # do yearly stats first
+    year_cts = all_songs["ID"].value_counts()
+    year_topsongs = sort_songs(sp, year_cts, large_db, num=60)
+    year_total = year_cts.sum()
+
+    make_formatted_top_songs(sp, year_topsongs, pdf, f"{yyyy}'s Top Songs", year_total, large_db, size = 22)
+    make_user_stamp(1,1,pdf, user_url, display_name, yyyy)
+
+    for i in range(len(months)):
+        mm = months[i]
+        tag = datetime.strftime(datetime.today().replace(month =mm, day=1), "%B")
+        path = f"{home_path}/data/{yyyy}-{mm:02d}"
+        df = pd.read_csv(f"{path}-songlist.txt")
+        pic_str = f"m{i}-"
+
+        m_cts = df["ID"].value_counts()
+        m_topsongs = sort_songs(sp, m_cts, large_db)
+        m_total = m_cts.sum()
+
+        make_formatted_top_songs(sp, m_topsongs, pdf, f"{tag}'s Top Songs", m_total, large_db, t=pic_str)
+        make_user_stamp(i,len(months),pdf, user_url, display_name, yyyy)
 
 
-pdf.close()
+    pdf.close()
 
-os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
-# delte auxillary files
-os.system(f"rm {home_path}/analysis/analysis.aux")
-os.system(f"rm {home_path}/analysis/analysis.log")
-os.system(f"rm {home_path}/analysis/analysis.out")
-os.system(f"rm {home_path}/analysis/*.jpg")
-os.system(f"rm {home_path}/analysis/*.png")
-os.system(f"rm {home_path}/analysis/part.tex")
-os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+    os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
+    # delte auxillary files
+    os.system(f"rm {home_path}/analysis/analysis.aux")
+    os.system(f"rm {home_path}/analysis/analysis.log")
+    os.system(f"rm {home_path}/analysis/analysis.out")
+    os.system(f"rm {home_path}/analysis/*.jpg")
+    os.system(f"rm {home_path}/analysis/*.png")
+    os.system(f"rm {home_path}/analysis/part.tex")
+    os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+
+if __name__ == "__main__":
+    main()

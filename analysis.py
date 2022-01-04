@@ -24,22 +24,14 @@ from PIL import Image, ImageDraw
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
 
-redirect_uri = 'http://localhost:7777/callback'
-# scope = 'user-read-recently-played'
-scope = "user-top-read"
+def get_auth():
+    redirect_uri = 'http://localhost:7777/callback'
+    # scope = 'user-read-recently-played'
+    scope = "user-top-read"
 
-token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
 
-sp = spotipy.Spotify(auth=token)
-
-yesterday = False
-otherday = ""
-if len(sys.argv) == 2:
-        if sys.argv[1] == "y": yesterday = True
-        else: 
-            # otherday = sys.argv[1]
-            # TODO: implement a way to standardize adding any date to allow for an analysis for any date
-            pass
+    return spotipy.Spotify(auth=token)
 
 #%% 
 
@@ -93,7 +85,7 @@ def make_counts(df, start, end):
     
     return songs["ID"].value_counts()
 
-def get_song_info(db, id):
+def get_song_info(sp, db, id):
     if not id in db:
         track = sp.track(id)
         artist_ids = []
@@ -129,14 +121,14 @@ def get_image(track_info):
         urlretrieve(track_info["PicURL"], im_path)
     return im_path
 
-def sort_songs(counts, db):
+def sort_songs(sp, counts, db):
 
     keys = counts.keys()
     if len(keys) > 25: keys = keys[0:25] # only sort first 25 keys
 
     sorted = []
     for key in keys:
-        name = get_song_info(db, key)["name"]
+        name = get_song_info(sp, db, key)["name"]
         # name = sp.track(key)["name"]
         sorted.append({"name": name, "ID": key, "count": counts[key]})
 
@@ -146,7 +138,7 @@ def sort_songs(counts, db):
     return sorted
 
 
-def make_top_songs(songs, file, message, total, db):
+def make_top_songs(sp, songs, file, message, total, db):
     """
     prints out the top songs for a given pd.series containing counts
     """
@@ -156,7 +148,7 @@ def make_top_songs(songs, file, message, total, db):
 
     for song in songs:
         id = song["ID"]
-        track_info = get_song_info(db, id)
+        track_info = get_song_info(sp, db, id)
         # track_info = sp.track(id)
         name = song["name"]
         count = song["count"]
@@ -167,7 +159,7 @@ def make_top_songs(songs, file, message, total, db):
     
     file.write(f"Total songs played: {total}\n")
 
-def make_formatted_top_songs(songs, file, message, total, db):
+def make_formatted_top_songs(sp, songs, file, message, total, db):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -192,7 +184,7 @@ def make_formatted_top_songs(songs, file, message, total, db):
         id = song["ID"]
         # get information to write
         # track_info = sp.track(id)
-        track_info = get_song_info(db, id)
+        track_info = get_song_info(sp, db, id)
         # urlretrieve(track_info["PicURL"], f"{home_path}/analysis/{t}{i}.jpg")
         pic_path = get_image(track_info)
         name = track_info["name"]
@@ -236,106 +228,122 @@ def make_formatted_top_songs(songs, file, message, total, db):
 
 
 
-# ========== MAKE DATAFRAMES, COUNTS, ETC.
 
-# get datetime of "today", the day in question
-day = start_of_day_est(datetime.today())
+def main():
+    sp = get_auth()
 
-if yesterday: 
-    day = day - timedelta(days = 1)
-elif otherday != "": 
-    day = start_of_day_est(parser.parse(otherday))
+    yesterday = False
+    otherday = ""
+    if len(sys.argv) == 2:
+            if sys.argv[1] == "y": yesterday = True
+            else: 
+                # otherday = sys.argv[1]
+                # TODO: implement a way to standardize adding any date to allow for an analysis for any date
+                pass
 
-# end of day is one day later than the day object
-eod = day + timedelta(days=1)
+    # ========== MAKE DATAFRAMES, COUNTS, ETC.
 
-# get DTO of the beginning of the current month
-m = int(datetime.strftime(day, "%m"))
-month = day.replace(month = m, day = 1)
+    # get datetime of "today", the day in question
+    day = start_of_day_est(datetime.today())
 
-# get a string for the date, e.g. 12-2021
-my = datetime.strftime(day, "%Y-%m")
-month_str = datetime.strftime(month, "%B")
-today_str = datetime.strftime(day,"%B %d, %Y")
+    if yesterday: 
+        day = day - timedelta(days = 1)
+    elif otherday != "": 
+        day = start_of_day_est(parser.parse(otherday))
 
-# get relevant series and dfs
-songs = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
+    # end of day is one day later than the day object
+    eod = day + timedelta(days=1)
 
-# get local song database
-if os.path.exists(f"{home_path}/data/{my}-database.txt"):
-    with open(f"{home_path}/data/{my}-database.txt","r") as f:
-        db = json.loads(f.read())
-else: db = {}
+    # get DTO of the beginning of the current month
+    m = int(datetime.strftime(day, "%m"))
+    month = day.replace(month = m, day = 1)
 
-today_cts = make_counts(songs, day, eod)
-today_topsongs = sort_songs(today_cts, db)
-today_total = today_cts.sum()
+    # get a string for the date, e.g. 12-2021
+    my = datetime.strftime(day, "%Y-%m")
+    month_str = datetime.strftime(month, "%B")
+    today_str = datetime.strftime(day,"%B %d, %Y")
 
-month_cts = make_counts(songs, month, eod)
-month_topsongs = sort_songs(month_cts, db)
-month_total = month_cts.sum()
+    # get relevant series and dfs
+    songs = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
 
-# ========== write to file
+    # get local song database
+    if os.path.exists(f"{home_path}/data/{my}-database.txt"):
+        with open(f"{home_path}/data/{my}-database.txt","r") as f:
+            db = json.loads(f.read())
+    else: db = {}
 
-# user information
-me = sp.current_user()
-display_name = me["display_name"]
+    today_cts = make_counts(songs, day, eod)
+    today_topsongs = sort_songs(sp, today_cts, db)
+    today_total = today_cts.sum()
 
+    month_cts = make_counts(songs, month, eod)
+    month_topsongs = sort_songs(sp, month_cts, db)
+    month_total = month_cts.sum()
 
-# textfile
-txt = open(f"{home_path}/analysis/analysis.txt", "w")
+    # ========== write to file
 
-make_top_songs(today_topsongs, txt, "TODAY'S TOP SONGS", today_total, db)
-txt.write("\n")
-make_top_songs(month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", month_total, db)
-
-txt.write(f"\n{display_name}, {today_str}")
-
-txt.close()
+    # user information
+    me = sp.current_user()
+    display_name = me["display_name"]
 
 
-# pdf
-pdf = open(f"{home_path}/analysis/part.tex", "w")
+    # textfile
+    txt = open(f"{home_path}/analysis/analysis.txt", "w")
 
-make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", today_total, db)
-make_formatted_top_songs(month_topsongs, pdf, f"{month_str}'s Top Songs", month_total, db)
+    make_top_songs(sp, today_topsongs, txt, "TODAY'S TOP SONGS", today_total, db)
+    txt.write("\n")
+    make_top_songs(sp, month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", month_total, db)
 
-# ========== USER INFO AT BOTTOM OF PDF
+    txt.write(f"\n{display_name}, {today_str}")
 
-# get profile photo
-urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
-# make image a circle
-make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp.png")
+    txt.close()
 
-# get user url
-user_url = me["external_urls"]["spotify"]
 
-# print image, date, user name to file
-pdf.write("\\vfill\\raggedleft\n")
-pdf.write("\\begin{minipage}{.47\\textwidth}\n")
-pdf.write("\\raggedleft")
-pdf.write("\\begin{minipage}{.75\\textwidth}\n")
-pdf.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
-# pdf.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
-pdf.write(f"\\normalsize {today_str}")
-pdf.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-pdf.write("\\begin{minipage}{.2\\textwidth}\n")
-pdf.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
-pdf.write("\\end{minipage}\\end{minipage}\n")
+    # pdf
+    pdf = open(f"{home_path}/analysis/part.tex", "w")
 
-pdf.close()
+    make_formatted_top_songs(sp, today_topsongs, pdf, "Today's Top Songs", today_total, db)
+    make_formatted_top_songs(sp, month_topsongs, pdf, f"{month_str}'s Top Songs", month_total, db)
 
-# write updated database
-with open(f"{home_path}/data/{my}-database.txt","w") as output:
-    output.write(json.dumps(db))
+    # ========== USER INFO AT BOTTOM OF PDF
 
-# compile and delete auxillary files
-os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
-# delte auxillary files
-os.system(f"rm {home_path}/analysis/analysis.aux")
-os.system(f"rm {home_path}/analysis/analysis.log")
-os.system(f"rm {home_path}/analysis/analysis.out")
-os.system(f"rm {home_path}/analysis/*.jpg")
-os.system(f"rm {home_path}/analysis/*.png")
-os.system(f"rm {home_path}/analysis/part.tex")
-os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+    # get profile photo
+    urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
+    # make image a circle
+    make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp.png")
+
+    # get user url
+    user_url = me["external_urls"]["spotify"]
+
+    # print image, date, user name to file
+    pdf.write("\\vfill\\raggedleft\n")
+    pdf.write("\\begin{minipage}{.47\\textwidth}\n")
+    pdf.write("\\raggedleft")
+    pdf.write("\\begin{minipage}{.75\\textwidth}\n")
+    pdf.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
+    # pdf.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
+    pdf.write(f"\\normalsize {today_str}")
+    pdf.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+    pdf.write("\\begin{minipage}{.2\\textwidth}\n")
+    pdf.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
+    pdf.write("\\end{minipage}\\end{minipage}\n")
+
+    pdf.close()
+
+    # write updated database
+    with open(f"{home_path}/data/{my}-database.txt","w") as output:
+        output.write(json.dumps(db))
+
+    # compile and delete auxillary files
+    os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
+    # delte auxillary files
+    os.system(f"rm {home_path}/analysis/analysis.aux")
+    os.system(f"rm {home_path}/analysis/analysis.log")
+    os.system(f"rm {home_path}/analysis/analysis.out")
+    os.system(f"rm {home_path}/analysis/*.jpg")
+    os.system(f"rm {home_path}/analysis/*.png")
+    os.system(f"rm {home_path}/analysis/part.tex")
+    os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+
+if __name__ == "__main__":
+    main()

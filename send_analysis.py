@@ -14,75 +14,77 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import pytz; est = pytz.timezone("America/New_York")
 
-yesterday = False
-today = datetime.today().astimezone(est)
-args = ""
+def main():
+    today = datetime.today().astimezone(est)
+    args = ""
 
-if len(sys.argv) == 2 and sys.argv[1] == "y":
-    d = datetime.today() - timedelta(days=1)
-    today = d.astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
-    yesterday = True
-    args = " y"
+    if len(sys.argv) == 2 and sys.argv[1] == "y":
+        d = datetime.today() - timedelta(days=1)
+        today = d.astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
+        args = " y"
 
-s = datetime.strftime(today, "%Y-%m%d")
-sf = datetime.strftime(today, "%B %d, %Y")
-my = datetime.strftime(today,"%Y-%m")
-yyyy = datetime.strftime(today,"%Y")
+    s = datetime.strftime(today, "%Y-%m%d")
+    sf = datetime.strftime(today, "%B %d, %Y")
+    my = datetime.strftime(today,"%Y-%m")
+    yyyy = datetime.strftime(today,"%Y")
 
-port = 465  # For SSL
+    port = 465  # For SSL
 
-# Create a secure SSL context
-context = ssl.create_default_context()
+    # Create a secure SSL context
+    context = ssl.create_default_context()
 
-path = home_path
+    path = home_path
 
-os.system(f"{python_path} {path}/get_rp.py > {path}/output.txt")
-os.system(f"{python_path} {path}/analysis.py{args} >> {path}/output.txt")
-os.system(f"rm {path}/output.txt")
-os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
-os.system(f"cp {path}/analysis/analysis.txt {gd_path}/analyses/{s}-analysis.txt")
+    os.system(f"{python_path} {path}/get_rp.py > {path}/output.txt")
+    os.system(f"{python_path} {path}/analysis.py{args} >> {path}/output.txt")
+    os.system(f"rm {path}/output.txt")
+    os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
+    os.system(f"cp {path}/analysis/analysis.txt {gd_path}/analyses/{s}-analysis.txt")
 
-#%%
+    #%%
 
-with open(f"{path}/analysis/analysis.txt") as f:
-    message = """"""
+    with open(f"{path}/analysis/analysis.txt") as f:
+        message = """"""
 
-    string = f.readline()
-    while (string != ""):
-        message += string
         string = f.readline()
+        while (string != ""):
+            message += string
+            string = f.readline()
 
-m = MIMEMultipart()
-m["Subject"] = f"Today's Stats! {sf}"
-m["From"] = sender
-m["To"] = sendee
-m["CC"] = cc
+    m = MIMEMultipart()
+    m["Subject"] = f"Today's Stats! {sf}"
+    m["From"] = sender
+    m["To"] = sendee
+    m["CC"] = cc
 
-message = MIMEText(message, "plain")
-m.attach(message)
+    message = MIMEText(message, "plain")
+    m.attach(message)
 
-# s = datetime.strftime(today, "%m%d%y")
-attachment = f"{path}/analysis/analysis.pdf"
-with open(attachment, "rb") as a:
-    part = MIMEBase("application", "octet-stream")
-    part.set_payload(a.read())
-    
+    # s = datetime.strftime(today, "%m%d%y")
+    attachment = f"{path}/analysis/analysis.pdf"
+    with open(attachment, "rb") as a:
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(a.read())
+        
 
-encoders.encode_base64(part)
+    encoders.encode_base64(part)
 
-part.add_header(
-    "Content-Disposition",
-    f"attachment; filename={s}-joesspotifystats.pdf",
-)
-m.attach(part)
+    part.add_header(
+        "Content-Disposition",
+        f"attachment; filename={s}-joesspotifystats.pdf",
+    )
+    m.attach(part)
 
-with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
-    server.login(sender, password)
-    server.sendmail(sender, sendee.split(", ") + cc.split(", "), m.as_string())
+    with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
+        server.login(sender, password)
+        server.sendmail(sender, sendee.split(", ") + cc.split(", "), m.as_string())
 
 
-# update yearly recap
+    # update yearly recap
 
-os.system(f"{python_path} {path}/year_analysis.py {yyyy} >> {path}/output.txt")
-os.system(f"rm {path}/output.txt")
-os.system(f"cp {path}/analysis/analysis.pdf {gd_path}/{yyyy}-recap.pdf")
+    os.system(f"{python_path} {path}/year_analysis.py {yyyy} >> {path}/output.txt")
+    os.system(f"rm {path}/output.txt")
+    os.system(f"cp {path}/analysis/analysis.pdf {gd_path}/{yyyy}-recap.pdf")
+
+if __name__ == "__main__":
+    main()
