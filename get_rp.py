@@ -1,7 +1,6 @@
 # Joe Nyhan, 6 December 2021
 # When run, this file writes recently played songs to ./data/%m-%Y-recentlyplayed.txt
 #%%
-
 # spotify libraries
 import spotipy.util as util # for getting authorization
 import spotipy              # for getting tracks, etc.
@@ -16,40 +15,22 @@ from dateutil import parser
 # os related
 from os.path import exists
 import os
-import sys
 
 # for analysis
 import pandas as pd
 # client information
 from secrets import username, client_id, client_secret, home_path, gd_path
 
-# get authorization token
-redirect_uri = 'http://localhost:7777/callback'
-# scope = 'user-read-recently-played'
-scope = "user-top-read"
-token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+def get_auth():
+    redirect_uri = 'http://localhost:7777/callback'
+    # scope = 'user-read-recently-played'
+    scope = "user-top-read"
 
-# create spotify object for getting information
-sp = spotipy.Spotify(auth=token)
+    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
 
-#%%
+    return spotipy.Spotify(auth=token)
 
-# ========== GET DAYS TO RUN (usually just today)
-
-today = datetime.today().astimezone(est)
-yesterday = today - timedelta(days=1)
-
-t_str = datetime.strftime(today,"%Y-%m")
-y_str = datetime.strftime(yesterday,"%Y-%m")
-
-days_to_run = [today]
-
-if t_str != y_str: # today and yesterday were in different months
-    days_to_run.append(yesterday)
-
-#%%
-
-def get_rp_songs(day):
+def get_rp_songs(sp, day):
 
     my = datetime.strftime(day, "%Y-%m") # month year; for file paths
     path = f"{home_path}/data/{my}-songlist.txt"
@@ -131,6 +112,24 @@ def get_rp_songs(day):
     # copy to backup location
     os.system(f"cp {home_path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
 
-# run necessary days
-for day in days_to_run:
-    get_rp_songs(day)
+# ========== GET DAYS TO RUN (usually just today)
+
+def main():
+    sp = get_auth()
+
+    today = datetime.today().astimezone(est)
+    yesterday = today - timedelta(days=1)
+
+    t_str = datetime.strftime(today,"%Y-%m")
+    y_str = datetime.strftime(yesterday,"%Y-%m")
+
+    days_to_run = [today]
+
+    if t_str != y_str: # today and yesterday were in different months
+        days_to_run.append(yesterday)
+    # run necessary days
+    for day in days_to_run:
+        get_rp_songs(sp, day)
+
+if __name__ == "__main__":
+    main()
