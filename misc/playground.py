@@ -140,3 +140,11 @@ d2 = {"a": 3, "d": 4}
 d1.update(d2)
 
 print(d1)
+
+#%%
+uri = "4LLpKhyESsyAXpc4laK94U"
+artist = sp.artist(uri)
+# %%
+uri = "5wtE5aLX5r7jOosmPhJhhk"
+album = sp.album(uri)
+# %%
