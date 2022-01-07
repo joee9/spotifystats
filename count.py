@@ -1,5 +1,5 @@
-# Joe Nyhan, 6 January 2022
-# Given a dataframe, will turn it into three dictionaries, containing all important information about a month
+# Joe Nyhan, 7 January 2022
+# Given a dataframe, will turn it into three ordered lists containing tracks, artists, and albums; also, updates database dictionaries as it goes
 
 # spotify libraries
 import spotipy.util as util

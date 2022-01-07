@@ -1,5 +1,7 @@
-# Joe Nyhan, 31 December 2021
-# Prints out top songs from each month, as well as the top songs from the current year
+# Joe Nyhan, 31 December 2021; updated 7 January 2021
+# Creates a LaTeX generated yearly summary; see yearly_sum_example.pdf
+
+# TODO: update to write monthly databases
 
 #%%
 
@@ -111,6 +113,7 @@ def main():
 
     make_fullpage_summary(pdf, year_cts, all_dbs, usr_info, str(yyyy))
 
+    # monthly top songs
     for i in range(len(months)):
         mm = months[i]
         tag = datetime.strftime(datetime.today().replace(month =mm, day=1), "%B")

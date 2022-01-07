@@ -1,5 +1,5 @@
-# Joe Nyhan, 26 December 2021
-# Produces a LaTeX generated .pdf and .txt file with top songs of the day and month
+# Joe Nyhan, 26 December 2021; updated 7 January 2021
+# Produces a LaTeX generated .pdf and .txt file with top songs, artists, and albums of the day and month
 #%%
 # spotify libraries
 import spotipy.util as util
