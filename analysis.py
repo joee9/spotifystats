@@ -1,5 +1,9 @@
 # Joe Nyhan, 26 December 2021; updated 7 January 2021
 # Produces a LaTeX generated .pdf and .txt file with top songs, artists, and albums of the day and month
+
+full_summary = True
+# full_summary = False
+
 #%%
 # spotify libraries
 import spotipy.util as util
@@ -299,6 +303,7 @@ def make_fullpage_summary(file, counts, dbs, stamp_info, message):
     make_user_stamp(file, stamp_info)
 
 
+
 def main():
     sp = get_auth()
 
@@ -380,8 +385,15 @@ def main():
     # pdf
     pdf = open(f"{home_path}/analysis/part.tex", "w")
 
-    make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
-    make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str)
+    if full_summary:
+        make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
+        make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str)
+    else:
+        today_track_cts, today_artist_cts, today_album_cts, today_total = today_cts
+        month_track_cts, month_artist_cts, month_album_cts, month_total = month_cts
+        make_formatted_top_songs(today_track_cts, pdf, "Today", today_total, track_db)
+        make_formatted_top_songs(month_track_cts, pdf, month_str, month_total, track_db)
+        make_user_stamp(pdf, today_usr_info)
 
     pdf.close()
 
