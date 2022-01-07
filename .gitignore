@@ -8,5 +8,6 @@ __pychache__/*
 ./misc/*
 *.pdf
 !example_summary.pdf
+!yearly_sum_example.pdf
 partold.tex
 part.tex
