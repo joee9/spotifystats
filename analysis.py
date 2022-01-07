@@ -217,7 +217,7 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         artist_info = artist_db[id]
         pic_path = get_artist_artwork(id, artist_info['artwork_url'])
         name = artist_info['name']
-        count = f"({artist['count']}) "
+        count = f"{artist['count']} "
         sp_url = artist_info['url']
 
         # replace latex special characters
@@ -381,25 +381,7 @@ def main():
     pdf = open(f"{home_path}/analysis/part.tex", "w")
 
     make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
-
-    # make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", today_total, track_db)
-    # make_formatted_top_songs(month_topsongs, pdf, f"{month_str}'s Top Songs", month_total, track_db)
-
-    # ========== USER INFO AT BOTTOM OF PDF
-
-
-    # # print image, date, user name to file
-    # pdf.write("\\vfill\\raggedleft\n")
-    # pdf.write("\\begin{minipage}{.47\\textwidth}\n")
-    # pdf.write("\\raggedleft")
-    # pdf.write("\\begin{minipage}{.75\\textwidth}\n")
-    # pdf.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
-    # # pdf.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
-    # pdf.write(f"\\normalsize {today_str}")
-    # pdf.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-    # pdf.write("\\begin{minipage}{.2\\textwidth}\n")
-    # pdf.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
-    # pdf.write("\\end{minipage}\\end{minipage}\n")
+    make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str)
 
     pdf.close()
 
