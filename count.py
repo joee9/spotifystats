@@ -24,17 +24,11 @@ def get_auth():
 
     return spotipy.Spotify(auth=token)
 
-def get_track_entry(sp, id, tracks, db):
+def get_track_count(sp, id, tracks, db):
     if not id in tracks:
         if id in db:
             data = db[id]
             name = data['name']
-            sp_url = data['url']
-            artist_names = data['artist_names']
-            artist_ids = data['artist_ids']
-            album_name = data['album_name']
-            album_id = data['album_id']
-            album_artwork_url = data['album_artwork_url']
         else: 
             data = sp.track(id)
             name = data['name']
@@ -57,35 +51,23 @@ def get_track_entry(sp, id, tracks, db):
                 'artist_ids': artist_ids,
                 'album_name': album_name,
                 'album_id': album_id,
-                'album_artwork_url': album_artwork_url,
+                'artwork_url': album_artwork_url,
             }
 
         tracks[id] = {
             'name': name,
-            'url': sp_url,
-            'artist_names': artist_names,
-            'artist_ids': artist_ids,
-            'album_name': album_name,
-            'album_id': album_id,
-            'album_artwork_url': album_artwork_url,
             'timestamps': [], # initalize to empty list
             'count': 0
         }
 
     return tracks[id]
 
-def get_album_entry(sp, id, albums, db):
+def get_album_count(sp, id, albums, db):
     if not id in albums:
         if id in db:
             data = db[id]
             name = data['name']
-            sp_url = data['url']
-            artist_names = data['artist_names']
-            artist_ids = data['artist_ids']
-            artwork_url = data['artwork_url']
         else:
-
-
             data = sp.album(id)
             name = data['name']
             sp_url = data['external_urls']['spotify']
@@ -108,25 +90,18 @@ def get_album_entry(sp, id, albums, db):
 
         albums[id] = {
             'name': name,
-            'url': sp_url,
-            'artist_names': artist_names,
-            'artist_ids': artist_ids,
-            'artwork_url': artwork_url,
             'timestamps': [], # initalize to empty list
             'count': 0
         }
     
     return albums[id]
 
-def get_artist_entry(sp, id, artists, db):
+def get_artist_count(sp, id, artists, db):
     if not id in artists:
 
         if id in db:
             data = db[id]
             name = data['name']
-            sp_url = data['url']
-            artwork_url = data['artwork_url']
-            genres = data['genres']
         else:
             data = sp.artist(id)
 
@@ -144,9 +119,6 @@ def get_artist_entry(sp, id, artists, db):
 
         artists[id] = {
             'name': name,
-            'url': sp_url,
-            'artwork_url': artwork_url,
-            'genres': genres,
             'timestamps': [], # initalize to empty list
             'count': 0
         }
@@ -163,25 +135,17 @@ def analyze_track(sp, row, analyses, dbs):
         info['timestamps'].append(timestamp)
         info['count'] += 1
 
-    track_info = get_track_entry(sp, track_id, tracks, track_db)
+    track_info = get_track_count(sp, track_id, tracks, track_db)
     add_curr_song(track_info)
 
-    album_info = get_album_entry(sp, track_info['album_id'], albums, album_db)
+    album_info = get_album_count(sp, track_db[track_id]['album_id'], albums, album_db)
     add_curr_song(album_info)
 
-    for artist_id in track_info['artist_ids']:
-        artist_info = get_artist_entry(sp, artist_id, artists, artist_db)
+    for artist_id in track_db[track_id]['artist_ids']:
+        artist_info = get_artist_count(sp, artist_id, artists, artist_db)
         add_curr_song(artist_info)
 
-def parse_dataframe(sp, df, yyyy_mm):
-
-    path = f'{home_path}/data/{yyyy_mm}'
-    db_path = f'{path}-database.txt'
-    if exists(db_path):
-        with open(db_path) as f:
-            dbs = json.loads(f.read())
-    else: 
-        dbs = {},{},{}
+def analyze_dataframe(sp, df, dbs):
 
     tracks = {}
     artists = {}
@@ -191,34 +155,71 @@ def parse_dataframe(sp, df, yyyy_mm):
     for i in range(len(df)):
         analyze_track(sp, df.iloc[i,:], analyses, dbs)
     
-    with open(db_path, 'w') as f:
-        f.write(json.dumps(dbs))
-    
     return tracks, artists, albums
 
 def sort_items(dict):
     def sort_scheme(d): return -d['count'], d['name']
 
+    total = 0
     result = []
     for id in dict.keys():
         d = dict[id]
-        result.append({'id': id, 'name': d['name'], 'count': d['count']})
+        count = d['count']
+        result.append({'id': id, 'name': d['name'], 'count': count})
+        total += count
     
     result.sort(key=sort_scheme)
 
-    return result
-    
+    return (result, total)
+
+def get_counts(sp, df, dbs):
+    track_cts, artist_cts, album_cts = analyze_dataframe(sp, df, dbs)
+    track_cts, total = sort_items(track_cts)
+    artist_cts, artist_total = sort_items(artist_cts)
+    album_cts, album_total = sort_items(album_cts)
+    return track_cts, artist_cts, album_cts, total
+
+
+def print_top(list, num=10):
+    list = list[0:num]
+    for i, item in enumerate(list):
+        name = item['name']
+        count = item['count']
+        print(f'{i+1:2d}. ({count}) {name:35s}')
 
 def main():
+    # test main
     sp = get_auth()
 
-    month_file = f'{home_path}/data/2021-12-songlist.txt'
+    yyyy_mm = '2022-01'
+    path = f'{home_path}/data/{yyyy_mm}'
+    db_path = f'{path}-database.txt'
+    if exists(db_path):
+        with open(db_path) as f:
+            dbs = json.loads(f.read())
+    else: 
+        dbs = {},{},{}
+
+    month_file = f'{path}-songlist.txt'
     df = pd.read_csv(month_file)
 
-    result = parse_dataframe(sp, df, '2021-12')
-    with open(f'{home_path}/data/2021-12-parsed.txt','w') as f:
+    result = get_counts(sp, df, dbs)
+
+    with open(f'{path}-counts.txt','w') as f:
         f.write(json.dumps(result))
     
+    with open(db_path, 'w') as f:
+        f.write(json.dumps(dbs))
+
+    track_cts, artist_cts, album_cts = result
+    track_cts, track_total = track_cts
+    artist_cts, artist_total = artist_cts
+    album_cts, album_total = album_cts
+
+    print_top(track_cts)
+    print(track_total)
+    print_top(artist_cts)
+    print_top(album_cts)
 
 if __name__ == '__main__':
     main()

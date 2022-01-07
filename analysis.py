@@ -19,10 +19,11 @@ import json
 import pandas as pd
 import numpy as np
 from urllib.request import urlretrieve
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
+from count import get_counts
 
 def get_auth():
     redirect_uri = 'http://localhost:7777/callback'
@@ -68,7 +69,7 @@ def make_image_circular(input_path, output_path):
     img = Image.fromarray(final_img_arr)
     img.save(output_path)
 
-def make_counts(df, start, end):
+def make_df_range(df, start, end):
     """
     Given a dataframe, a starting date and an ending date (both datetime objects), return a data frame of the value counts for song ids
     """
@@ -79,83 +80,59 @@ def make_counts(df, start, end):
         if  parsed > start and parsed < end:
             songs = songs.append(df.iloc[i,:])
     
-    return songs["ID"].value_counts()
+    return songs
 
-def get_song_info(sp, db, id):
-    if not id in db:
-        track = sp.track(id)
-        artist_ids = []
-        artist_names = []
-        for artist in track["album"]["artists"]:
-            artist_ids.append(artist["id"])
-            artist_names.append(artist["name"])
-        name = track["name"]
-        pic_url = track["album"]["images"][1]["url"]
-        sp_url = track["external_urls"]["spotify"]
-        album_id = track["album"]["id"]
-        album_name = track["album"]["name"]
-
-        # adds this entry to the database for future reference
-        db[id] = {"name": name,
-            "ArtistIDs": artist_ids,
-            "ArtistNames": artist_names,
-            "AlbumID": album_id,
-            "AlbumName": album_name,
-            "PicURL": pic_url,
-            "SpotifyURL": sp_url
-        }
-
-    return db[id]
-    
-def get_image(track_info):
+def get_album_artwork(album_id, artwork_url):
     """
     gets image by AlbumID, and stores in local database if not already present
     """
-    album_id = track_info["AlbumID"]
     im_path = f"{home_path}/analysis/images/{album_id}.jpg"
     if not os.path.exists(im_path):
-        urlretrieve(track_info["PicURL"], im_path)
+        urlretrieve(artwork_url, im_path)
     return im_path
 
-def sort_songs(sp, counts, db):
+def get_artist_artwork(artist_id, artwork_url):
+    """
+    gets image by AlbumID, and stores in local database if not already present
+    """
+    im_path = f"{home_path}/analysis/artist_images/{artist_id}.jpg"
+    if not os.path.exists(im_path):
+        temp_path = im_path[0:len(im_path)-4] + "temp.jpg"
+        urlretrieve(artwork_url, temp_path)
 
-    keys = counts.keys()
-    if len(keys) > 25: keys = keys[0:25] # only sort first 25 keys
+        # crop image to a square
+        im = Image.open(temp_path)
+        w, h = im.size
+        c = min(w,h)
+        cropped_im = im.crop(((w-c) // 2, (h-c) // 2, (w+c) // 2, (h+c) // 2))
+        cropped_im.save(im_path)
 
-    sorted = []
-    for key in keys:
-        name = get_song_info(sp, db, key)["name"]
-        # name = sp.track(key)["name"]
-        sorted.append({"name": name, "ID": key, "count": counts[key]})
+        os.system(f"rm {temp_path}")
 
-    def sort_by_name(d): return -d["count"], d["name"]
+    return im_path
 
-    sorted.sort(key=sort_by_name)
-    return sorted
-
-
-def make_top_songs(sp, songs, file, message, total, db):
+def make_top_songs(counts, file, message, db):
     """
     prints out the top songs for a given pd.series containing counts
     """
-    if len(songs) > 10: songs = songs[0:10]
+    song_cts, artists, albums, total = counts
+    if len(song_cts) > 10: song_cts = song_cts[0:10]
 
     file.write(message + "\n")
 
-    for song in songs:
-        id = song["ID"]
-        track_info = get_song_info(sp, db, id)
-        # track_info = sp.track(id)
-        name = song["name"]
-        count = song["count"]
+    for song in song_cts:
+        id = song['id']
+        track_info = db[id]
+        name = song['name']
+        count = song['count']
 
-        artist_names = format_artist_names(track_info["ArtistNames"])
+        artist_names = format_artist_names(track_info['artist_names'])
     
         file.write(f"{count:3d}  {name}, by {artist_names}\n")
     
     file.write(f"Total songs played: {total}\n")
 
-def make_formatted_top_songs(sp, songs, file, message, total, db):
+def make_formatted_top_songs(songs, file, message, total, track_db):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -163,6 +140,8 @@ def make_formatted_top_songs(sp, songs, file, message, total, db):
     total = str(total)
     if len(total) == 4:
         total = total[0] + "," + total[1:]
+    elif len(total) == 5:
+        total = total[:2] + "," + total[2:]
 
     ltf = False
 
@@ -172,21 +151,18 @@ def make_formatted_top_songs(sp, songs, file, message, total, db):
     if len(songs) > 10:
         songs = songs[0:10]   
 
-    file.write("\\noindent\\LARGE{" + f"{message}" + "}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
+    file.write("\\noindent\\LARGE{" + message + "'s Top Songs}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
     def write(song):
         
-        id = song["ID"]
-        # get information to write
-        # track_info = sp.track(id)
-        track_info = get_song_info(sp, db, id)
-        # urlretrieve(track_info["PicURL"], f"{home_path}/analysis/{t}{i}.jpg")
-        pic_path = get_image(track_info)
-        name = track_info["name"]
+        id = song['id']
+        track_info = track_db[id]
+        pic_path = get_album_artwork(track_info['album_id'], track_info['artwork_url'])
+        name = track_info['name']
         count = f"({song['count']}) "
-        artist_names = count + format_artist_names(track_info["ArtistNames"])
-        sp_url = track_info["SpotifyURL"]
+        artist_names = count + format_artist_names(track_info['artist_names'])
+        sp_url = track_info['url']
 
         # replace latex special characters
         if "&" in name: name = name.replace("&", "\&")
@@ -221,6 +197,106 @@ def make_formatted_top_songs(sp, songs, file, message, total, db):
     
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
+
+def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db):
+    """
+    make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
+    """
+    # # add comma if necessary (assumes 4 digit numbers max)
+
+
+    if len(artists) > 5:
+        artists = artists[0:5]   
+    if len(albums) > 5:
+        albums = albums[0:5]   
+
+
+    def write_artist(artist):
+        
+        id = artist['id']
+        artist_info = artist_db[id]
+        pic_path = get_artist_artwork(id, artist_info['artwork_url'])
+        name = artist_info['name']
+        count = f"({artist['count']}) "
+        sp_url = artist_info['url']
+
+        # replace latex special characters
+        if "&" in name: name = name.replace("&", "\&")
+        if "$" in name: name = name.replace("$", "\$")
+        if "#" in name: name = name.replace("#", "\#")
+
+        file.write("\\begin{minipage}{.2\\textwidth}\n")
+        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
+        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+        file.write("\\begin{minipage}{.75\\textwidth}\n")
+        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
+        file.write("\\footnotesize \\truncate{\\textwidth}{"+ count + " plays}\n")
+        file.write("\\end{minipage}\\\\[2pt]\n")
+        file.write("\n")
+
+    def write_album(album):
+        
+        id = album['id']
+        album_info = album_db[id]
+        pic_path = get_album_artwork(id, album_info['artwork_url'])
+        name = album_info['name']
+        count = f"({album['count']}) "
+        artist_names = count + format_artist_names(album_info['artist_names'])
+        sp_url = album_info['url']
+
+        # replace latex special characters
+        if "&" in name: name = name.replace("&", "\&")
+        if "$" in name: name = name.replace("$", "\$")
+        if "#" in name: name = name.replace("#", "\#")
+        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
+        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
+        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
+
+        file.write("\\begin{minipage}{.2\\textwidth}\n")
+        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
+        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+        file.write("\\begin{minipage}{.75\\textwidth}\n")
+        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
+        file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
+        file.write("\\end{minipage}\\\\[2pt]\n")
+        file.write("\n")
+
+    file.write("\\noindent\\begin{minipage}{.47\\textwidth}\n")
+    file.write("\\noindent\\LARGE{Top Artists}\\\\[10pt]\n")
+
+    for artist in artists:
+        write_artist(artist)
+
+    file.write("\\end{minipage}\\hfill%\n")
+    file.write("\\begin{minipage}{.47\\textwidth}\n")
+    file.write("\\noindent\\LARGE{Top Albums}\\\\[10pt]\n")
+    
+    for album in albums:
+        write_album(album)
+    
+    file.write("\\end{minipage}\n")
+    file.write("\\vspace{15pt}\n\n")
+
+def make_user_stamp(file, stamp_info):
+    display_name, user_url, pic_path, tag = stamp_info
+    file.write("\\vfill\\raggedleft\n")
+    file.write("\\begin{minipage}{.47\\textwidth}\n")
+    file.write("\\raggedleft")
+    file.write("\\begin{minipage}{.75\\textwidth}\n")
+    file.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
+    file.write(f"\\normalsize {tag}")
+    file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+    file.write("\\begin{minipage}{.2\\textwidth}\n")
+    file.write("\\includegraphics[width = \\textwidth]{" + pic_path + "}\n")
+    file.write("\\end{minipage}\\end{minipage}\n")
+    file.write("\\newpage\n")
+
+def make_fullpage_summary(file, counts, dbs, stamp_info, message):
+    songs, artists, albums, total = counts
+    track_db, artist_db, album_db = dbs
+    make_formatted_top_songs(songs, file, message, total, track_db)
+    make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db)
+    make_user_stamp(file, stamp_info)
 
 
 def main():
@@ -258,35 +334,43 @@ def main():
     today_str = datetime.strftime(day,"%B %d, %Y")
 
     # get relevant series and dfs
-    songs = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
+    songlist = pd.read_csv(f"{home_path}/data/{my}-songlist.txt")
 
     # get local song database
     if os.path.exists(f"{home_path}/data/{my}-database.txt"):
         with open(f"{home_path}/data/{my}-database.txt","r") as f:
-            db = json.loads(f.read())
-    else: db = {}
+            dbs = json.loads(f.read()) # track_db, artist_db, album_db
+    else: dbs = {},{},{}
 
-    today_cts = make_counts(songs, day, eod)
-    today_topsongs = sort_songs(sp, today_cts, db)
-    today_total = today_cts.sum()
 
-    month_cts = make_counts(songs, month, eod)
-    month_topsongs = sort_songs(sp, month_cts, db)
-    month_total = month_cts.sum()
+    today_df = make_df_range(songlist, day, eod)
+    today_cts = get_counts(sp, today_df, dbs)
 
-    # ========== write to file
+    month_df = make_df_range(songlist, month, eod)
+    month_cts = get_counts(sp, month_df, dbs)
+
+    track_db, artist_db, album_db = dbs
+
+    # ========== WRITE TO FILE
 
     # user information
     me = sp.current_user()
     display_name = me["display_name"]
+    # get profile photo
+    pp_path = f'{home_path}/analysis/pp.png'
+    urlretrieve(me["images"][0]["url"],pp_path)
+    make_image_circular(pp_path,pp_path)
+    # get user url
+    user_url = me["external_urls"]["spotify"]
+    today_usr_info = display_name, user_url, pp_path, today_str
 
 
     # textfile
     txt = open(f"{home_path}/analysis/analysis.txt", "w")
 
-    make_top_songs(sp, today_topsongs, txt, "TODAY'S TOP SONGS", today_total, db)
+    make_top_songs(today_cts, txt, "TODAY'S TOP SONGS", track_db)
     txt.write("\n")
-    make_top_songs(sp, month_topsongs, txt, f"{month_str.upper()}'S TOP SONGS", month_total, db)
+    make_top_songs(month_cts, txt, f"{month_str.upper()}'S TOP SONGS", track_db)
 
     txt.write(f"\n{display_name}, {today_str}")
 
@@ -296,37 +380,33 @@ def main():
     # pdf
     pdf = open(f"{home_path}/analysis/part.tex", "w")
 
-    make_formatted_top_songs(sp, today_topsongs, pdf, "Today's Top Songs", today_total, db)
-    make_formatted_top_songs(sp, month_topsongs, pdf, f"{month_str}'s Top Songs", month_total, db)
+    make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
+
+    # make_formatted_top_songs(today_topsongs, pdf, "Today's Top Songs", today_total, track_db)
+    # make_formatted_top_songs(month_topsongs, pdf, f"{month_str}'s Top Songs", month_total, track_db)
 
     # ========== USER INFO AT BOTTOM OF PDF
 
-    # get profile photo
-    urlretrieve(me["images"][0]["url"],f"{home_path}/analysis/pp.jpg")
-    # make image a circle
-    make_image_circular(f"{home_path}/analysis/pp.jpg",f"{home_path}/analysis/circpp.png")
 
-    # get user url
-    user_url = me["external_urls"]["spotify"]
-
-    # print image, date, user name to file
-    pdf.write("\\vfill\\raggedleft\n")
-    pdf.write("\\begin{minipage}{.47\\textwidth}\n")
-    pdf.write("\\raggedleft")
-    pdf.write("\\begin{minipage}{.75\\textwidth}\n")
-    pdf.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
-    # pdf.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
-    pdf.write(f"\\normalsize {today_str}")
-    pdf.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-    pdf.write("\\begin{minipage}{.2\\textwidth}\n")
-    pdf.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
-    pdf.write("\\end{minipage}\\end{minipage}\n")
+    # # print image, date, user name to file
+    # pdf.write("\\vfill\\raggedleft\n")
+    # pdf.write("\\begin{minipage}{.47\\textwidth}\n")
+    # pdf.write("\\raggedleft")
+    # pdf.write("\\begin{minipage}{.75\\textwidth}\n")
+    # pdf.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
+    # # pdf.write("\\raggedleft\\large " + f"{display_name}" +  "\\\\[2pt]\n")
+    # pdf.write(f"\\normalsize {today_str}")
+    # pdf.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+    # pdf.write("\\begin{minipage}{.2\\textwidth}\n")
+    # pdf.write("\\includegraphics[width = \\textwidth]{" + f"{home_path}" + "/analysis/circpp.png}\n")
+    # pdf.write("\\end{minipage}\\end{minipage}\n")
 
     pdf.close()
 
     # write updated database
+    dbs = track_db, artist_db, album_db
     with open(f"{home_path}/data/{my}-database.txt","w") as output:
-        output.write(json.dumps(db))
+        output.write(json.dumps(dbs))
 
     # compile and delete auxillary files
     os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
@@ -334,7 +414,7 @@ def main():
     os.system(f"rm {home_path}/analysis/analysis.aux")
     os.system(f"rm {home_path}/analysis/analysis.log")
     os.system(f"rm {home_path}/analysis/analysis.out")
-    os.system(f"rm {home_path}/analysis/*.jpg")
+    # os.system(f"rm {home_path}/analysis/*.jpg")
     os.system(f"rm {home_path}/analysis/*.png")
     os.system(f"rm {home_path}/analysis/part.tex")
     os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
