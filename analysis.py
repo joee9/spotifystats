@@ -221,20 +221,24 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         artist_info = artist_db[id]
         pic_path = get_artist_artwork(id, artist_info['artwork_url'])
         name = artist_info['name']
-        count = f"{artist['count']} "
+        count = f"({artist['count']}) "
+        artist_names = count + format_artist_names(artist_info['genres']).title()
         sp_url = artist_info['url']
 
         # replace latex special characters
         if "&" in name: name = name.replace("&", "\&")
         if "$" in name: name = name.replace("$", "\$")
         if "#" in name: name = name.replace("#", "\#")
+        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
+        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
+        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
         file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
         file.write("\\begin{minipage}{.75\\textwidth}\n")
         file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        file.write("\\footnotesize \\truncate{\\textwidth}{"+ count + " plays}\n")
+        file.write("\\footnotesize \\truncate{\\textwidth}{"+ artist_names + "}\n")
         file.write("\\end{minipage}\\\\[2pt]\n")
         file.write("\n")
 
@@ -310,11 +314,11 @@ def main():
     yesterday = False
     otherday = ""
     if len(sys.argv) == 2:
-            if sys.argv[1] == "y": yesterday = True
-            else: 
-                # otherday = sys.argv[1]
-                # TODO: implement a way to standardize adding any date to allow for an analysis for any date
-                pass
+        if sys.argv[1] == "y": yesterday = True
+        else: 
+            # otherday = sys.argv[1]
+            # TODO: implement a way to standardize adding any date to allow for an analysis for any date
+            pass
 
     # ========== MAKE DATAFRAMES, COUNTS, ETC.
 
@@ -408,7 +412,6 @@ def main():
     os.system(f"rm {home_path}/analysis/analysis.aux")
     os.system(f"rm {home_path}/analysis/analysis.log")
     os.system(f"rm {home_path}/analysis/analysis.out")
-    # os.system(f"rm {home_path}/analysis/*.jpg")
     os.system(f"rm {home_path}/analysis/*.png")
     os.system(f"rm {home_path}/analysis/part.tex")
     os.system(f"rm {home_path}/analysis/pdflatex_output.txt")

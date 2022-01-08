@@ -36,6 +36,7 @@ def main():
     path = home_path
 
     os.system(f"{python_path} {path}/get_rp.py > {path}/output.txt")
+    os.system(f"rm {home_path}/analysis/artist_images/*.jpg") # remove artist images so that most recent can be downloaded
     os.system(f"{python_path} {path}/analysis.py{args} >> {path}/output.txt")
     os.system(f"rm {path}/output.txt")
     os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
