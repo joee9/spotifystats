@@ -316,7 +316,7 @@ def main():
     if len(sys.argv) == 2:
         if sys.argv[1] == "y": yesterday = True
         else: 
-            # otherday = sys.argv[1]
+            otherday = sys.argv[1]
             # TODO: implement a way to standardize adding any date to allow for an analysis for any date
             pass
 
