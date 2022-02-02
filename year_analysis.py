@@ -111,7 +111,7 @@ def main():
     # do yearly stats first
     year_cts = get_counts(sp, all_songs, all_dbs)
 
-    make_fullpage_summary(pdf, year_cts, all_dbs, usr_info, str(yyyy))
+    make_fullpage_summary(pdf, year_cts, all_dbs, usr_info, str(yyyy), pct=True)
 
     # monthly top songs
     for i in range(len(months)):

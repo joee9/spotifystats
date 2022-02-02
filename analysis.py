@@ -136,11 +136,12 @@ def make_top_songs(counts, file, message, db):
     
     file.write(f"Total songs played: {total}\n")
 
-def make_formatted_top_songs(songs, file, message, total, track_db):
+def make_formatted_top_songs(songs, file, message, total, track_db, percent=False):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
     # # add comma if necessary (assumes 4 digit numbers max)
+    tot = total
     total = str(total)
     if len(total) == 4:
         total = total[0] + "," + total[1:]
@@ -158,13 +159,18 @@ def make_formatted_top_songs(songs, file, message, total, track_db):
     file.write("\\noindent\\LARGE{" + message + "'s Top Songs}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
     file.write("\\begin{minipage}{.47\\textwidth}\n")
 
+    def count_percent(count):
+        ct_pct = count / tot * 100
+        return f'({count}: {ct_pct:.1f}%) '
+
     def write(song):
         
         id = song['id']
         track_info = track_db[id]
         pic_path = get_album_artwork(track_info['album_id'], track_info['artwork_url'])
         name = track_info['name']
-        count = f"({song['count']}) "
+        if percent: count = count_percent(song['count'])
+        else:       count = f"({song['count']}) "
         artist_names = count + format_artist_names(track_info['artist_names'])
         sp_url = track_info['url']
 
@@ -172,9 +178,11 @@ def make_formatted_top_songs(songs, file, message, total, track_db):
         if "&" in name: name = name.replace("&", "\&")
         if "$" in name: name = name.replace("$", "\$")
         if "#" in name: name = name.replace("#", "\#")
+        if "%" in name: name = name.replace("%", "\%")
         if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
         if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
         if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
+        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -202,7 +210,7 @@ def make_formatted_top_songs(songs, file, message, total, track_db):
     file.write("\\end{minipage}\n")
     file.write("\\vspace{15pt}\n\n")
 
-def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db):
+def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=False):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
@@ -214,6 +222,9 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
     if len(albums) > 5:
         albums = albums[0:5]   
 
+    def count_percent(count):
+        ct_pct = count / total * 100
+        return f'({count}: {ct_pct:.1f}%) '
 
     def write_artist(artist):
         
@@ -221,7 +232,8 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         artist_info = artist_db[id]
         pic_path = get_artist_artwork(id, artist_info['artwork_url'])
         name = artist_info['name']
-        count = f"({artist['count']}) "
+        if percent: count = count_percent(artist['count'])
+        else:       count = f"({artist['count']}) "
         artist_names = count + format_artist_names(artist_info['genres']).title()
         sp_url = artist_info['url']
 
@@ -229,9 +241,11 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         if "&" in name: name = name.replace("&", "\&")
         if "$" in name: name = name.replace("$", "\$")
         if "#" in name: name = name.replace("#", "\#")
+        if "%" in name: name = name.replace("%", "\%")
         if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
         if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
         if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
+        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -248,7 +262,8 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         album_info = album_db[id]
         pic_path = get_album_artwork(id, album_info['artwork_url'])
         name = album_info['name']
-        count = f"({album['count']}) "
+        if percent: count = count_percent(album['count'])
+        else:       count = f"({album['count']}) "
         artist_names = count + format_artist_names(album_info['artist_names'])
         sp_url = album_info['url']
 
@@ -256,9 +271,11 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         if "&" in name: name = name.replace("&", "\&")
         if "$" in name: name = name.replace("$", "\$")
         if "#" in name: name = name.replace("#", "\#")
+        if "%" in name: name = name.replace("%", "\%")
         if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
         if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
         if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
+        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -299,11 +316,11 @@ def make_user_stamp(file, stamp_info):
     file.write("\\end{minipage}\\end{minipage}\n")
     file.write("\\newpage\n")
 
-def make_fullpage_summary(file, counts, dbs, stamp_info, message):
+def make_fullpage_summary(file, counts, dbs, stamp_info, message, pct=False):
     songs, artists, albums, total = counts
     track_db, artist_db, album_db = dbs
     make_formatted_top_songs(songs, file, message, total, track_db)
-    make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db)
+    make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=pct)
     make_user_stamp(file, stamp_info)
 
 
@@ -391,7 +408,7 @@ def main():
 
     if full_summary:
         make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
-        make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str)
+        make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str, pct=True)
     else:
         today_track_cts, today_artist_cts, today_album_cts, today_total = today_cts
         month_track_cts, month_artist_cts, month_album_cts, month_total = month_cts
