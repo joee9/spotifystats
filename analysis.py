@@ -5,9 +5,6 @@ full_summary = True
 # full_summary = False
 
 #%%
-# # spotify libraries
-# import spotipy.util as util
-# import spotipy
 
 from auth import get_auth
 from latex import *

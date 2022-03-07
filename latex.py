@@ -8,7 +8,6 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from secrets import home_path
 
-
 def replace_latex_special_characters(string):
 
     if "&" in string: string = string.replace("&", "\&")

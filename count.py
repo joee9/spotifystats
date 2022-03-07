@@ -1,10 +1,6 @@
 # Joe Nyhan, 7 January 2022
 # Given a dataframe, will turn it into three ordered lists containing tracks, artists, and albums; also, updates database dictionaries as it goes
 
-# spotify libraries
-# import spotipy.util as util
-# import spotipy
-
 from auth import get_auth
 
 #system related
@@ -16,15 +12,6 @@ import pandas as pd
 
 # user specific details
 from secrets import username, client_id, client_secret, home_path
-
-# def get_auth():
-#     redirect_uri = 'http://localhost:7777/callback'
-#     # scope = 'user-read-recently-played'
-#     scope = 'user-top-read'
-
-#     token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
-
-#     return spotipy.Spotify(auth=token)
 
 def get_track_count(sp, id, tracks, db):
     if not id in tracks:
