@@ -6,8 +6,10 @@
 #%%
 
 # spotify libraries
-import spotipy.util as util
-import spotipy
+# import spotipy.util as util
+# import spotipy
+
+from auth import get_auth
 
 # time related
 from datetime import datetime, timedelta
@@ -27,17 +29,17 @@ from PIL import Image, ImageDraw
 
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
-from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular
+from latex import make_fullpage_summary, make_formatted_top_songs, make_image_circular
 from count import get_counts
 
-def get_auth():
-    redirect_uri = 'http://localhost:7777/callback'
-    # scope = 'user-read-recently-played'
-    scope = "user-top-read"
+# def get_auth():
+#     redirect_uri = 'http://localhost:7777/callback'
+#     # scope = 'user-read-recently-played'
+#     scope = "user-top-read"
 
-    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+#     token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
 
-    return spotipy.Spotify(auth=token)
+#     return spotipy.Spotify(auth=token)
 
 
 def make_user_stamp(i, length, file, stamp_info):
