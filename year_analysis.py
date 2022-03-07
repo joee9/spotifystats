@@ -26,6 +26,7 @@ from PIL import Image, ImageDraw
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
 from latex import make_fullpage_summary, make_formatted_top_songs, make_image_circular
+from analysis import start_of_day_est
 from count import get_counts
 
 
@@ -107,9 +108,23 @@ def main():
         tag = datetime.strftime(datetime.today().replace(month =mm, day=1), "%B")
         path = f"{home_path}/data/{yyyy}-{mm:02d}"
         df = pd.read_csv(f"{path}-songlist.txt")
-        pic_str = f"m{i}-"
 
-        m_song_cts, m_artist_cts, m_album_cts, m_total = get_counts(sp, df, all_dbs)
+        if os.path.exists(f'{path}-counts.txt'):
+            with open(f'{path}-counts.txt') as f:
+                m_song_cts, m_artist_cts, m_album_cts, m_total = json.loads(f.read())
+        else:
+            m_song_cts, m_artist_cts, m_album_cts, m_total = get_counts(sp, df, all_dbs)
+        
+        last_ts = df.tail(1).to_numpy()[0][1]
+        last_time = parser.parse(last_ts)
+        cutoff_time = start_of_day_est(datetime.today()) - timedelta(days = 1)
+
+        # write if counts file doesnt exist and falls in the right timeframe
+        if last_time < cutoff_time and not os.path.exists(f'{path}-counts.txt'):
+            with open(f'{path}-counts.txt','w') as f:
+                cts = m_song_cts, m_artist_cts, m_album_cts, m_total
+                f.write(json.dumps(cts))
+
 
         make_formatted_top_songs(m_song_cts, pdf, tag, m_total, large_track_db)
         make_user_stamp(i,len(months),pdf, usr_info)
