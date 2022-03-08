@@ -1,6 +1,6 @@
 # Spotify Stats
 
-"Spotify Stats" was developed to allow Spotify users to collect and analyze their listening history. This implementation creates a database of the songs that the user listens to and at what time, then sends a daily recap to the user via email. An example recap is given in `./example_summary.pdf`.
+"Spotify Stats" was developed to allow Spotify users to collect and analyze their listening history. This implementation creates a database of the songs that the user listens to and at what time, then sends a daily recap to the user via email. An example recap is given in `./example_summary.pdf`. Also, given a playlist ID, will update a personal playlist with the user's top daily songs.
 
 ## Setup
 
@@ -17,6 +17,7 @@
         - `username` (str): the user's login username, usually an email address
         - `client_id` (str): the user's client ID; get from step 1.
         - `client_secret` (str): the user's secret key; get from step 1.
+        - `todays_playlist_id` (str): the ID of a user created playlist that will update with the user's top daily songs.
     - email specific:
         - `sender` (str): the email address from which emails will be sent. I created a special, separate gmail account for this purpose. *Note*: you may need to turn off some security settings for the google account in order for it to allow this code to send emails
         - `password` (str): the password for the above email account
