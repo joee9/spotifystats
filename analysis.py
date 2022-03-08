@@ -26,7 +26,7 @@ from urllib.request import urlretrieve
 from PIL import Image, ImageDraw, ImageFilter
 
 # user specific details
-from secrets import username, client_id, client_secret, client_scope, home_path, python_path, pdflatex_path, sender
+from secrets import username, client_id, client_secret, client_scope, home_path, python_path, pdflatex_path, sender, todays_playlist_id
 from count import get_counts
 
 def get_auth():
@@ -311,7 +311,23 @@ def make_fullpage_summary(file, counts, dbs, stamp_info, message, pct=False):
     make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=pct)
     make_user_stamp(file, stamp_info)
 
-def update_todays_playlist(sp, cts, day_str, num=25):
+def update_todays_playlist(sp, playlist_id, cts, date_str, username, num=25):
+    today_str = datetime.strftime(start_of_day_est(datetime.today()),"%B %d, %Y")
+    yesterday_str = datetime.strftime(start_of_day_est(datetime.today()-timedelta(days=1)),"%B %d, %Y")
+
+    ids = []
+    if len(cts) < num: num = len(cts)
+    for i in range(num):
+        ids.append(cts[i]['id'])
+    sp.playlist_replace_items(playlist_id, ids)
+    s = f"{username.split(' ')[0]}'s most played songs on {date_str}."
+
+    if today_str == date_str:
+        sp.playlist_change_details(playlist_id, name = "Today's Top Songs!", description=s)
+    elif today_str == yesterday_str:
+        sp.playlist_change_details(playlist_id, name = "Yesterday's Top Songs!", description=s)
+    else:
+        sp.playlist_change_details(playlist_id, description=s)
 
 def main():
     sp = get_auth()
@@ -410,6 +426,8 @@ def main():
     dbs = track_db, artist_db, album_db
     with open(f"{home_path}/data/{my}-database.txt","w") as output:
         output.write(json.dumps(dbs))
+
+    update_todays_playlist(sp, todays_playlist_id, today_cts[0], today_str, display_name)
 
     # compile and delete auxillary files
     os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
