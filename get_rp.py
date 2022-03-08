@@ -1,10 +1,6 @@
 # Joe Nyhan, 6 December 2021
 # When run, this file writes recently played songs to ./data/%m-%Y-recentlyplayed.txt
 #%%
-# spotify libraries
-import spotipy.util as util # for getting authorization
-import spotipy              # for getting tracks, etc.
-
 # time related packages
 from datetime import datetime, timedelta
 import pytz
@@ -19,16 +15,9 @@ import os
 # for analysis
 import pandas as pd
 # client information
-from secrets import username, client_id, client_secret, home_path, gd_path
+from secrets import home_path, gd_path
 
-def get_auth():
-    redirect_uri = 'http://localhost:7777/callback'
-    # scope = 'user-read-recently-played'
-    scope = "user-top-read"
-
-    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
-
-    return spotipy.Spotify(auth=token)
+from auth import get_auth
 
 def get_rp_songs(sp, day):
 
@@ -112,10 +101,7 @@ def get_rp_songs(sp, day):
     # copy to backup location
     os.system(f"cp {home_path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
 
-
-def main():
-    sp = get_auth()
-
+def run_get_rp(sp):
     # ========== GET DAYS TO RUN (usually just today)
     today = datetime.today().astimezone(est)
     yesterday = today - timedelta(days=1)
@@ -130,6 +116,11 @@ def main():
     # run necessary days
     for day in days_to_run:
         get_rp_songs(sp, day)
+
+
+def main():
+    sp = get_auth()
+    run_get_rp(sp)
 
 if __name__ == "__main__":
     main()

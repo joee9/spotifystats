@@ -14,6 +14,11 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import pytz; est = pytz.timezone("America/New_York")
 
+from auth import get_auth
+from get_rp import run_get_rp
+from analysis import run_analysis
+from year_analysis import run_year_analysis
+
 def main():
     today = datetime.today().astimezone(est)
     args = ""
@@ -21,7 +26,7 @@ def main():
     if len(sys.argv) == 2 and sys.argv[1] == "y":
         d = datetime.today() - timedelta(days=1)
         today = d.astimezone(est).replace(second=0, minute=0, hour=0, microsecond=0)
-        args = " y"
+        args = "y"
 
     s = datetime.strftime(today, "%Y-%m%d")
     sf = datetime.strftime(today, "%B %d, %Y")
@@ -35,10 +40,11 @@ def main():
 
     path = home_path
 
-    os.system(f"{python_path} {path}/get_rp.py > {path}/output.txt")
+    sp = get_auth()
+    
+    run_get_rp(sp)
     os.system(f"rm {home_path}/analysis/artist_images/*.jpg") # remove artist images so that most recent can be downloaded
-    os.system(f"{python_path} {path}/analysis.py{args} >> {path}/output.txt")
-    os.system(f"rm {path}/output.txt")
+    run_analysis(sp,arg=args)
     os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
     os.system(f"cp {path}/analysis/analysis.txt {gd_path}/analyses/{s}-analysis.txt")
 
@@ -83,8 +89,7 @@ def main():
 
     # update yearly recap
 
-    os.system(f"{python_path} {path}/year_analysis.py {yyyy} >> {path}/output.txt")
-    os.system(f"rm {path}/output.txt")
+    run_year_analysis(sp, yyyy)
     os.system(f"cp {path}/analysis/analysis.pdf {gd_path}/{yyyy}-recap.pdf")
 
 if __name__ == "__main__":

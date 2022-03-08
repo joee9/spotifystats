@@ -16,28 +16,17 @@ from dateutil import parser
 
 #system related
 import os
-import sys
 import json
 
 # misc
 import pandas as pd
-import numpy as np
 from urllib.request import urlretrieve
-from PIL import Image, ImageDraw
 
 # user specific details
-from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
+from secrets import home_path, python_path, pdflatex_path
 from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular
 from count import get_counts
-
-def get_auth():
-    redirect_uri = 'http://localhost:7777/callback'
-    # scope = 'user-read-recently-played'
-    scope = "user-top-read"
-
-    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
-
-    return spotipy.Spotify(auth=token)
+from auth import get_auth
 
 
 def make_user_stamp(i, length, file, stamp_info):
@@ -57,13 +46,11 @@ def make_user_stamp(i, length, file, stamp_info):
     file.write("\\newpage\n")
 
 
-def main():
+def run_year_analysis(sp,yyyy):
 
-    sp = get_auth()
-
-    yyyy = 2022
-    if len(sys.argv) == 2:
-            yyyy = sys.argv[1]
+    # yyyy = 2022
+    # if len(sys.argv) == 2:
+    #         yyyy = sys.argv[1]
 
     # ========== USER INFORMATION
     me = sp.current_user()
@@ -119,7 +106,6 @@ def main():
         tag = datetime.strftime(datetime.today().replace(month =mm, day=1), "%B")
         path = f"{home_path}/data/{yyyy}-{mm:02d}"
         df = pd.read_csv(f"{path}-songlist.txt")
-        pic_str = f"m{i}-"
 
         m_song_cts, m_artist_cts, m_album_cts, m_total = get_counts(sp, df, all_dbs)
 
@@ -137,6 +123,10 @@ def main():
     os.system(f"rm {home_path}/analysis/*.png")
     os.system(f"rm {home_path}/analysis/part.tex")
     os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+
+def main():
+    sp = get_auth()
+    run_year_analysis(sp, 2022)
 
 if __name__ == "__main__":
     main()

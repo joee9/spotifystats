@@ -1,13 +1,8 @@
-# Joe Nyhan, 26 December 2021; updated 7 January 2021
+# Joe Nyhan, 26 December 2021; updated 7 January 2021, 8 March 2022
 # Produces a LaTeX generated .pdf and .txt file with top songs, artists, and albums of the day and month
 
 full_summary = True
 # full_summary = False
-
-#%%
-# spotify libraries
-import spotipy.util as util
-import spotipy
 
 # time related
 from datetime import datetime, timedelta
@@ -26,17 +21,10 @@ from urllib.request import urlretrieve
 from PIL import Image, ImageDraw, ImageFilter
 
 # user specific details
-from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
+from secrets import home_path, python_path, pdflatex_path
 from count import get_counts
 
-def get_auth():
-    redirect_uri = 'http://localhost:7777/callback'
-    # scope = 'user-read-recently-played'
-    scope = "user-top-read"
-
-    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
-
-    return spotipy.Spotify(auth=token)
+from auth import get_auth
 
 def start_of_day_est(dto):
     """
@@ -324,17 +312,16 @@ def make_fullpage_summary(file, counts, dbs, stamp_info, message, pct=False):
     make_user_stamp(file, stamp_info)
 
 
-def main():
-    sp = get_auth()
+def run_analysis(sp, arg = ""):
 
     yesterday = False
     otherday = ""
-    if len(sys.argv) == 2:
-        if sys.argv[1] == "y": yesterday = True
-        else: 
-            otherday = sys.argv[1]
-            # TODO: implement a way to standardize adding any date to allow for an analysis for any date
-            pass
+    if arg == "": pass
+    elif arg == "y": yesterday = True
+    else: 
+        otherday = arg
+        # TODO: implement a way to standardize adding any date to allow for an analysis for any date
+        pass
 
     # ========== MAKE DATAFRAMES, COUNTS, ETC.
 
@@ -431,6 +418,10 @@ def main():
     os.system(f"rm {home_path}/analysis/*.png")
     os.system(f"rm {home_path}/analysis/part.tex")
     os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+
+def main():
+    sp = get_auth()
+    run_analysis(sp)
 
 if __name__ == "__main__":
     main()
