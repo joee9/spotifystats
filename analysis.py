@@ -26,15 +26,14 @@ from urllib.request import urlretrieve
 from PIL import Image, ImageDraw, ImageFilter
 
 # user specific details
-from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
+from secrets import username, client_id, client_secret, client_scope, home_path, python_path, pdflatex_path, sender
 from count import get_counts
 
 def get_auth():
     redirect_uri = 'http://localhost:7777/callback'
     # scope = 'user-read-recently-played'
-    scope = "user-top-read"
 
-    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+    token = util.prompt_for_user_token(username=username, scope=client_scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
 
     return spotipy.Spotify(auth=token)
 
@@ -136,6 +135,13 @@ def make_top_songs(counts, file, message, db):
     
     file.write(f"Total songs played: {total}\n")
 
+def replace_latex_special_characters(string):
+    if "&" in string: string = string.replace("&", "\&")
+    if "$" in string: string = string.replace("$", "\$")
+    if "#" in string: string = string.replace("#", "\#")
+    if "%" in string: string = string.replace("%", "\%")
+    return string
+
 def make_formatted_top_songs(songs, file, message, total, track_db, percent=False):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
@@ -175,14 +181,8 @@ def make_formatted_top_songs(songs, file, message, total, track_db, percent=Fals
         sp_url = track_info['url']
 
         # replace latex special characters
-        if "&" in name: name = name.replace("&", "\&")
-        if "$" in name: name = name.replace("$", "\$")
-        if "#" in name: name = name.replace("#", "\#")
-        if "%" in name: name = name.replace("%", "\%")
-        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
-        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
-        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
-        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
+        name = replace_latex_special_characters(name)
+        artist_names = replace_latex_special_characters(artist_names)
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -238,14 +238,8 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         sp_url = artist_info['url']
 
         # replace latex special characters
-        if "&" in name: name = name.replace("&", "\&")
-        if "$" in name: name = name.replace("$", "\$")
-        if "#" in name: name = name.replace("#", "\#")
-        if "%" in name: name = name.replace("%", "\%")
-        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
-        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
-        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
-        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
+        name = replace_latex_special_characters(name)
+        artist_names = replace_latex_special_characters(artist_names)
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -268,14 +262,8 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         sp_url = album_info['url']
 
         # replace latex special characters
-        if "&" in name: name = name.replace("&", "\&")
-        if "$" in name: name = name.replace("$", "\$")
-        if "#" in name: name = name.replace("#", "\#")
-        if "%" in name: name = name.replace("%", "\%")
-        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
-        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
-        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
-        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
+        name = replace_latex_special_characters(name)
+        artist_names = replace_latex_special_characters(artist_names)
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -323,7 +311,7 @@ def make_fullpage_summary(file, counts, dbs, stamp_info, message, pct=False):
     make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=pct)
     make_user_stamp(file, stamp_info)
 
-
+def update_todays_playlist(sp, cts, day_str, num=25):
 
 def main():
     sp = get_auth()

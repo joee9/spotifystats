@@ -26,7 +26,7 @@ from urllib.request import urlretrieve
 from PIL import Image, ImageDraw
 
 # user specific details
-from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
+from secrets import username, client_id, client_secret, client_scope, home_path, python_path, pdflatex_path, sender
 from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular
 from count import get_counts
 
@@ -35,7 +35,7 @@ def get_auth():
     # scope = 'user-read-recently-played'
     scope = "user-top-read"
 
-    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+    token = util.prompt_for_user_token(username=username, scope=client_scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
 
     return spotipy.Spotify(auth=token)
 
