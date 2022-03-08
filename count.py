@@ -13,13 +13,14 @@ import json
 import pandas as pd
 
 # user specific details
-from secrets import username, client_id, client_secret, client_scope, home_path
+from secrets import username, client_id, client_secret, home_path
 
 def get_auth():
     redirect_uri = 'http://localhost:7777/callback'
     # scope = 'user-read-recently-played'
+    scope = 'user-top-read'
 
-    token = util.prompt_for_user_token(username=username, scope=client_scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
 
     return spotipy.Spotify(auth=token)
 
