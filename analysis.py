@@ -372,9 +372,9 @@ def additional_analysis(file, dbs, cts, usr_info, month, day):
         most_freq_day = month+timedelta(days=np.argmax(n).item())
         most_freq_ct = int(max(n))
         
-        file.write(f"\\small \\textbf{{Total plays}}: {int(sum(n))}\\\\")
-        file.write(f"\\small \\textbf{{Most played day}}: {most_freq_day:%B %d}, {most_freq_ct} plays\\\\")
-        file.write(f"\\textbf{{Average Daily Plays}}: {np.average(n):.2f}")
+        file.write(f"\\small \\textbf{{Total plays:}} {int(sum(n))}\\\\")
+        file.write(f"\\small \\textbf{{Most played day:}} {most_freq_day:%B %d}, {most_freq_ct} plays\\\\")
+        file.write(f"\\textbf{{Average Daily Plays:}} {np.average(n):.2f}")
 
 
     def write(plt_name, info_func, info_ct, info_db):
