@@ -165,7 +165,7 @@ def sort_items(dict):
     for id in dict.keys():
         d = dict[id]
         count = d['count']
-        result.append({'id': id, 'name': d['name'], 'count': count})
+        result.append({'id': id, 'name': d['name'], 'count': count, 'timestamps': d['timestamps']})
         total += count
     
     result.sort(key=sort_scheme)

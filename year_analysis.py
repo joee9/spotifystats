@@ -27,7 +27,7 @@ from PIL import Image, ImageDraw
 
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
-from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular
+from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular, additional_analysis, start_of_day_est
 from count import get_counts
 
 def get_auth():
@@ -106,12 +106,16 @@ def main():
 
     #%%
 
+    day = start_of_day_est(datetime.today()) + timedelta(days=1)
+    year = day.replace(month=1, day=1)
+
     pdf = open(f"{home_path}/analysis/part.tex", "w")
 
     # do yearly stats first
     year_cts = get_counts(sp, all_songs, all_dbs)
 
     make_fullpage_summary(pdf, year_cts, all_dbs, usr_info, str(yyyy), pct=True)
+    additional_analysis(pdf, all_dbs, year_cts, usr_info, year, day)
 
     # monthly top songs
     for i in range(len(months)):
