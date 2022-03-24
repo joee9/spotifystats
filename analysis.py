@@ -24,6 +24,7 @@ import pandas as pd
 import numpy as np
 from urllib.request import urlretrieve
 from PIL import Image, ImageDraw, ImageFilter
+import matplotlib.pyplot as plt
 
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
@@ -136,6 +137,15 @@ def make_top_songs(counts, file, message, db):
     
     file.write(f"Total songs played: {total}\n")
 
+def replace_latex_special_characters(s):
+
+    if "&" in s: s = s.replace("&", "\&")
+    if "$" in s: s = s.replace("$", "\$")
+    if "#" in s: s = s.replace("#", "\#")
+    if "%" in s: s = s.replace("%", "\%")
+
+    return s
+
 def make_formatted_top_songs(songs, file, message, total, track_db, percent=False):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
@@ -175,14 +185,16 @@ def make_formatted_top_songs(songs, file, message, total, track_db, percent=Fals
         sp_url = track_info['url']
 
         # replace latex special characters
-        if "&" in name: name = name.replace("&", "\&")
-        if "$" in name: name = name.replace("$", "\$")
-        if "#" in name: name = name.replace("#", "\#")
-        if "%" in name: name = name.replace("%", "\%")
-        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
-        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
-        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
-        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
+        name = replace_latex_special_characters(name)
+        artist_names = replace_latex_special_characters(artist_names)
+        # if "&" in name: name = name.replace("&", "\&")
+        # if "$" in name: name = name.replace("$", "\$")
+        # if "#" in name: name = name.replace("#", "\#")
+        # if "%" in name: name = name.replace("%", "\%")
+        # if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
+        # if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
+        # if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
+        # if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -238,14 +250,8 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         sp_url = artist_info['url']
 
         # replace latex special characters
-        if "&" in name: name = name.replace("&", "\&")
-        if "$" in name: name = name.replace("$", "\$")
-        if "#" in name: name = name.replace("#", "\#")
-        if "%" in name: name = name.replace("%", "\%")
-        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
-        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
-        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
-        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
+        name = replace_latex_special_characters(name)
+        artist_names = replace_latex_special_characters(artist_names)
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -268,14 +274,8 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
         sp_url = album_info['url']
 
         # replace latex special characters
-        if "&" in name: name = name.replace("&", "\&")
-        if "$" in name: name = name.replace("$", "\$")
-        if "#" in name: name = name.replace("#", "\#")
-        if "%" in name: name = name.replace("%", "\%")
-        if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
-        if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
-        if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
-        if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
+        name = replace_latex_special_characters(name)
+        artist_names = replace_latex_special_characters(artist_names)
 
         file.write("\\begin{minipage}{.2\\textwidth}\n")
         file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
@@ -322,6 +322,64 @@ def make_fullpage_summary(file, counts, dbs, stamp_info, message, pct=False):
     make_formatted_top_songs(songs, file, message, total, track_db)
     make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=pct)
     make_user_stamp(file, stamp_info)
+
+def additional_analysis(file, dbs, cts, usr_info):
+
+    def make_plot(info, type):
+        parsed_ts = [parser.parse(t).astimezone(est) for t in info['timestamps']]
+
+        num_bins = (parsed_ts[-1] - parsed_ts[0]).days + 1
+        n, bins, patches = plt.hist(parsed_ts, num_bins)
+
+        locs, labels = plt.xticks()
+        new_labels = []
+        first_date = parsed_ts[0]
+
+        for i, loc in enumerate(locs):
+            l = timedelta((loc-locs[0])) + first_date
+            lf = f'{l:%b %d}'
+            new_labels.append(lf)
+
+        plt.xticks(locs, new_labels)
+        plt.savefig(f'{home_path}/analysis/plots/{type}.pdf')
+        plt.close()
+    
+    # def write_info(info, dbs, type):
+
+    #     file.write("\\begin{minipage}{.2\\textwidth}\n")
+    #     file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
+    #     file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+    #     file.write("\\begin{minipage}{.75\\textwidth}\n")
+    #     file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
+    #     file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
+    #     file.write("\\end{minipage}\\\\[2pt]\n")
+    #     file.write("\n")
+
+    def write(t):
+        file.write("\\noindent\\begin{minipage}{.47\\textwidth}\n")
+        file.write("\\noindent\\LARGE{Top Artists}\\\\[10pt]\n")
+        file.write("\\end{minipage}\\hfill%\n")
+        file.write("\\begin{minipage}{.47\\textwidth}\n")
+        file.write("\\includegraphics[width = \\textwidth]{" + f'{home_path}/analysis/plots/{t}.pdf' + "}\n")
+        file.write("\\end{minipage}\n")
+        file.write("")
+
+    track_cts, artist_cts, album_cts, total_tracks = cts
+    track_db, artist_db, album_db = dbs
+
+    make_plot(track_cts[0], 'track')
+    make_plot(artist_cts[0], 'artist')
+    make_plot(album_cts[0], 'album')
+
+    file.write("\\newpage\n")
+
+    write('artist')
+    make_user_stamp(file, usr_info)
+    
+    file.write("\\newpage\n")
+
+    
+
 
 
 def main():
@@ -408,6 +466,7 @@ def main():
     if full_summary:
         make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
         make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str, pct=True)
+        additional_analysis(pdf, dbs, month_cts, today_usr_info)
     else:
         today_track_cts, today_artist_cts, today_album_cts, today_total = today_cts
         month_track_cts, month_artist_cts, month_album_cts, month_total = month_cts

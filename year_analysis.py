@@ -27,7 +27,7 @@ from PIL import Image, ImageDraw
 
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
-from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular
+from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular, additional_analysis
 from count import get_counts
 
 def get_auth():
@@ -112,6 +112,7 @@ def main():
     year_cts = get_counts(sp, all_songs, all_dbs)
 
     make_fullpage_summary(pdf, year_cts, all_dbs, usr_info, str(yyyy), pct=True)
+    additional_analysis(pdf, all_dbs, year_cts)
 
     # monthly top songs
     for i in range(len(months)):
