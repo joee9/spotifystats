@@ -343,15 +343,18 @@ def additional_analysis(file, dbs, cts, usr_info, month, day):
 
         locs, labels = plt.xticks()
         new_labels = []
+        new_locs = []
         first_date = month
 
         delta = locs[1]-locs[0]
-        for i, loc in enumerate(locs):
+        for i in range(len(locs)):
             l = timedelta(days = delta*i) + first_date
+            nl = delta*i + locs[0]
             lf = f'{l:%b %d}'
             new_labels.append(lf)
+            new_locs.append(nl)
 
-        plt.xticks(locs, new_labels)
+        plt.xticks(new_locs, new_labels)
         plt.savefig(f'{home_path}/analysis/plots/{name}.pdf')
         plt.close()
 
