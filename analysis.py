@@ -325,6 +325,10 @@ def make_fullpage_summary(file, counts, dbs, stamp_info, message, pct=False):
 
 def additional_analysis(file, dbs, cts, usr_info, month, day):
 
+    bins = []
+    for d in range((day-month).days+1):
+        bins.append(month+timedelta(days=d))
+
     def make_plot(info, name):
         parsed_ts = [parser.parse(t).astimezone(est) for t in info['timestamps']]
         # print(parsed_ts)
@@ -333,9 +337,6 @@ def additional_analysis(file, dbs, cts, usr_info, month, day):
         # print(num_bins)
         # print(num_days)
         # print(day,month)
-        bins = []
-        for d in range((day-month).days+1):
-            bins.append(month+timedelta(days=d))
         
         n, a_bins, patches = plt.hist(parsed_ts, bins)
         # n, bin_edges = np.histogram(parsed_ts, bins)
