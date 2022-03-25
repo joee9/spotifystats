@@ -107,7 +107,11 @@ def main():
     #%%
 
     day = start_of_day_est(datetime.today()) + timedelta(days=1)
-    year = day.replace(month=1, day=1)
+    if day.year == yyyy:
+        year = day.replace(month=1, day=1)
+    else:
+        day = day.replace(year=int(yyyy)+1, month=1, day=1)
+        year = day.replace(year=int(yyyy), month=min(months), day=1)
 
     pdf = open(f"{home_path}/analysis/part.tex", "w")
 
