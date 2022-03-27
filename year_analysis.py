@@ -63,7 +63,7 @@ def main():
 
     yyyy = 2022
     if len(sys.argv) == 2:
-            yyyy = sys.argv[1]
+            yyyy = int(sys.argv[1])
 
     # ========== USER INFORMATION
     me = sp.current_user()
