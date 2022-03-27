@@ -175,3 +175,9 @@ plt.savefig('./top_song_plot.pdf')
 
 
 # %%
+import datetime
+
+t = datetime.datetime.today()
+t.year
+
+# %%
