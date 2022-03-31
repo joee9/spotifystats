@@ -42,7 +42,7 @@ def get_track_count(sp, id, tracks, db):
             
             album_name = data['album']['name']
             album_id = data['album']['id']
-            album_artwork_url = data['album']['images'][1]['url']
+            album_artwork_url = data['album']['images'][2]['url']
 
             db[id] = {
                 'name': name,
@@ -78,7 +78,7 @@ def get_album_count(sp, id, albums, db):
                 artist_names.append(entry['name'])
                 artist_ids.append(entry['id'])
 
-            artwork_url = data['images'][1]['url']
+            artwork_url = data['images'][2]['url']
 
             db[id] = {
                 'name': name,
@@ -107,7 +107,7 @@ def get_artist_count(sp, id, artists, db):
 
             name = data['name']
             sp_url = data['external_urls']['spotify']
-            artwork_url = data['images'][1]['url']
+            artwork_url = data['images'][2]['url']
             genres = data['genres']
 
             db[id] = {

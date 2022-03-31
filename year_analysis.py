@@ -27,7 +27,7 @@ from PIL import Image, ImageDraw
 
 # user specific details
 from secrets import username, client_id, client_secret, home_path, python_path, pdflatex_path, sender
-from analysis import make_fullpage_summary, make_formatted_top_songs, make_image_circular, additional_analysis, start_of_day_est
+from analysis import make_fullpage_summary, make_formatted_top_songs, start_of_day_est, make_user_stamp, write_html_header, write_html_footer
 from count import get_counts
 
 def get_auth():
@@ -40,7 +40,7 @@ def get_auth():
     return spotipy.Spotify(auth=token)
 
 
-def make_user_stamp(i, length, file, stamp_info):
+# def make_user_stamp(i, length, file, stamp_info):
     display_name, user_url, pic_path, tag = stamp_info
     if i == length -1: pass
     elif i % 2 == 0: return
@@ -68,15 +68,11 @@ def main():
     # ========== USER INFORMATION
     me = sp.current_user()
     display_name = me["display_name"]
-
-    pp_path = f'{home_path}/analysis/pp.png'
-    urlretrieve(me["images"][0]["url"],pp_path)
-    make_image_circular(pp_path,pp_path)
-
-    # get user url
+    user_pic_path = me["images"][0]["url"]
     user_url = me["external_urls"]["spotify"]
 
-    usr_info = display_name, user_url, pp_path, f'Yearly Recap: {yyyy}'
+    usr_info = user_url, user_pic_path, display_name, f'Yearly Recap: {yyyy}'
+
 
     # ========== CREATE DATA FRAMES FOR EACH MONTH
 
@@ -106,20 +102,22 @@ def main():
 
     #%%
 
-    day = start_of_day_est(datetime.today()) + timedelta(days=1)
-    if day.year == yyyy:
-        year = day.replace(month=1, day=1)
-    else:
-        day = day.replace(year=int(yyyy)+1, month=1, day=1)
-        year = day.replace(year=int(yyyy), month=min(months), day=1)
+    # day = start_of_day_est(datetime.today()) + timedelta(days=1)
+    # if day.year == yyyy:
+    #     year = day.replace(month=1, day=1)
+    # else:
+    #     day = day.replace(year=int(yyyy)+1, month=1, day=1)
+    #     year = day.replace(year=int(yyyy), month=min(months), day=1)
 
-    pdf = open(f"{home_path}/analysis/part.tex", "w")
+    html = open(f"{home_path}/analysis/year_analysis.html", "w")
+    write_html_header(html)
+
+    make_user_stamp(html, usr_info)
 
     # do yearly stats first
     year_cts = get_counts(sp, all_songs, all_dbs)
 
-    make_fullpage_summary(pdf, year_cts, all_dbs, usr_info, str(yyyy), pct=True)
-    additional_analysis(pdf, all_dbs, year_cts, usr_info, year, day)
+    make_fullpage_summary(html, year_cts, all_dbs, usr_info, str(yyyy), pct=True)
 
     # monthly top songs
     for i in range(len(months)):
@@ -131,20 +129,11 @@ def main():
 
         m_song_cts, m_artist_cts, m_album_cts, m_total = get_counts(sp, df, all_dbs)
 
-        make_formatted_top_songs(m_song_cts, pdf, tag, m_total, large_track_db)
-        make_user_stamp(i,len(months),pdf, usr_info)
+        make_formatted_top_songs(m_song_cts, html, tag, m_total, large_track_db)
+    
 
-    pdf.close()
-
-    os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
-    # delte auxillary files
-    os.system(f"rm {home_path}/analysis/analysis.aux")
-    os.system(f"rm {home_path}/analysis/analysis.log")
-    os.system(f"rm {home_path}/analysis/analysis.out")
-    # os.system(f"rm {home_path}/analysis/*.jpg")
-    os.system(f"rm {home_path}/analysis/*.png")
-    os.system(f"rm {home_path}/analysis/part.tex")
-    os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+    write_html_footer(html)
+    html.close()
 
 if __name__ == "__main__":
     main()

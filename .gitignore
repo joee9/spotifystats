@@ -7,7 +7,8 @@ __pychache__/*
 *.pyc
 ./misc/*
 *.pdf
-!example_summary.pdf
-!yearly_sum_example.pdf
+*.html
+!example_summary.html
+!yearly_sum_example.html
 partold.tex
 part.tex
