@@ -2,7 +2,7 @@
 
 "Spotify Stats" was developed to allow Spotify users to collect and analyze their listening history. This implementation creates a database of the songs that the user listens to and at what time, then sends a daily recap to the user via email. An example recap is given in `./example_summary.html`.
 
-*Note*: this project has recently been updated to provide `html` and `css` enriched emails containing recaps. Before, those were provided via LaTeX compiled `pdf`s (an example of an old pdf is provided in `pdf-example.pdf`. The move towards `html` hopes to make this code quicker, cleaner, and better for distribution on a cloud service, such as AWS. 
+*Note*: this project has recently been updated to provide `html` and `css` enriched emails containing recaps. Before, those were provided via LaTeX compiled `pdf`s (an example of an old pdf is provided in `pdf-example.pdf`). The move towards `html` hopes to make this code quicker, cleaner, and better for distribution on a cloud service, such as AWS. 
 
 ## Setup
 
