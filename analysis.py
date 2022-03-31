@@ -3,6 +3,7 @@
 
 full_summary = True
 # full_summary = False
+pic_size = "60px"
 
 #%%
 # spotify libraries
@@ -146,88 +147,98 @@ def replace_latex_special_characters(s):
 
     return s
 
+
+def count_percent(count, tot):
+    ct_pct = count / tot * 100
+    return f'({count}: {ct_pct:.1f}%) '
+
+
+def write_block(file, params):
+    """
+    writes an html block for songs, artists, etc. Place within <div><table></div></table>
+    """
+    sp_url, pic_url, header, subheader = params
+    file.write(f'<tr>\n')
+    file.write(f'<td valign="top" width="{pic_size}" height="{pic_size}"><a href="{sp_url}"><img src="{pic_url}" alt="{header}"></a></td>\n')
+    file.write(f'<td valign="middle"><b sytle="font-size:120%">{header}</b><br>{subheader}</td>\n')
+    file.write(f'</tr>\n')
+
+
+def track_parameters(track, track_db, tot, percent=False):
+
+    id = track['id']
+    track_info = track_db[id]
+
+    pic_url = track_info['artwork_url']
+    sp_url = track_info['url']
+    header = track_info['name']
+    subheader = f'({track["count"]}) ' + format_artist_names(track_info['artist_names'])
+
+    return sp_url, pic_url, header, subheader
+
+
+def album_parameters(album, album_db, tot, percent=False):
+
+    id = album['id']
+    album_info = album_db[id]
+
+    pic_url = album_info['artwork_url']
+    sp_url = album_info['url']
+    header = album_info['name']
+    if percent: count = count_percent(album['count'], tot)
+    else:       count = f"({album['count']}) "
+    subheader = count + format_artist_names(album_info['artist_names'])
+
+    return sp_url, pic_url, header, subheader
+
+
+def artist_parameters(artist, artist_db, tot, percent=False):
+
+    id = artist['id']
+    artist_info = artist_db[id]
+
+    pic_url = artist_info['artwork_url']
+    sp_url = artist_info['url']
+    header = artist_info['name']
+    if percent: count = count_percent(artist['count'], tot)
+    else:       count = f"({artist['count']}) "
+    subheader = count + format_artist_names(artist_info['genres']).title()
+
+    return sp_url, pic_url, header, subheader
+
+
+def write_over_list(file, items, items_db, f_params, tot, percent=False):
+    file.write('<div><table>')
+
+    for item in items:
+        write_block(file, f_params(item, items_db, tot, percent))
+
+    file.write('</div></table>')
+
+
+def write_header(file, tag, tot=None):
+    file.write(f'<h1>{tag}</h1>\n')
+    if tot != None:
+        file.write(f'<h3>Total songs played: {tot}</h3>\n\n')
+
+
 def make_formatted_top_songs(songs, file, message, total, track_db, percent=False):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
     """
     # # add comma if necessary (assumes 4 digit numbers max)
-    tot = total
     total = str(total)
     if len(total) == 4:
         total = total[0] + "," + total[1:]
     elif len(total) == 5:
         total = total[:2] + "," + total[2:]
 
-    ltf = False
-
-    if len(songs) < 5:
-        ltf = True
-
     if len(songs) > 10:
         songs = songs[0:10]   
 
-    # file.write("\\noindent\\LARGE{" + message + "'s Top Songs}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
-    # file.write("\\begin{minipage}{.47\\textwidth}\n")
-    file.write(f'<h1>{message}\'s Top Songs</h1>\n')
-    file.write(f'<h3>Total songs played: {total}</h3>\n\n')
+    write_header(file, f"{message}'s Top Songs", total)
+    write_over_list(file, songs, track_db, track_parameters, total, percent)
 
-    def count_percent(count):
-        ct_pct = count / tot * 100
-        return f'({count}: {ct_pct:.1f}%) '
-
-    def write(song):
-        
-        id = song['id']
-        track_info = track_db[id]
-        pic_path = get_album_artwork(track_info['album_id'], track_info['artwork_url'])
-        name = track_info['name']
-        if percent: count = count_percent(song['count'])
-        else:       count = f"({song['count']}) "
-        artist_names = count + format_artist_names(track_info['artist_names'])
-        sp_url = track_info['url']
-
-        # replace latex special characters
-        name = replace_latex_special_characters(name)
-        artist_names = replace_latex_special_characters(artist_names)
-        # if "&" in name: name = name.replace("&", "\&")
-        # if "$" in name: name = name.replace("$", "\$")
-        # if "#" in name: name = name.replace("#", "\#")
-        # if "%" in name: name = name.replace("%", "\%")
-        # if "&" in artist_names: artist_names = artist_names.replace("&", "\&")
-        # if "$" in artist_names: artist_names = artist_names.replace("$", "\$")
-        # if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
-        # if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
-
-        # file.write("\\begin{minipage}{.2\\textwidth}\n")
-        # file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-        # file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-        # file.write("\\begin{minipage}{.75\\textwidth}\n")
-        # file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        # file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-        # file.write("\\end{minipage}\\\\[5pt]\n")
-        # file.write("\n")
-        file.write(f'<tr>\n')
-        file.write(f'<td valign="top" width="100px" height="100px"><a href="{sp_url}"><img src="{track_info["artwork_url"]}" alt="{name}"></a></td>\n')
-        file.write(f'<td valign="middle"><b sytle="font-size:120%">{name}</b><br>{artist_names}</td>\n')
-        file.write(f'</tr>\n')
-
-    file.write('<div><table>')
-    for song in songs:
-        write(song)
-    file.write('</table></div>')
-    # upp = 5
-    # if len(songs) < upp: upp = len(songs)
-    # for i in range(upp):
-    #     write(songs[i])
-
-    # file.write("\\end{minipage}\\hfill%\n")
-    # file.write("\\begin{minipage}{.47\\textwidth}\n")
-    
-    # if not ltf:
-    #     upp = 10 
-    #     if len(songs) < upp: upp = len(songs)
-    #     for i in range(5,upp):
-    #         write(songs[i])
     
 def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=False):
     """
@@ -235,256 +246,68 @@ def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db
     """
     # # add comma if necessary (assumes 4 digit numbers max)
 
-
     if len(artists) > 5:
         artists = artists[0:5]   
     if len(albums) > 5:
         albums = albums[0:5]   
 
-    def count_percent(count):
-        ct_pct = count / total * 100
-        return f'({count}: {ct_pct:.1f}%) '
+    write_header(file, "Top Artists")
+    write_over_list(file, artists, artist_db, artist_parameters, total, percent)
 
-    def write_artist(artist):
-        
-        id = artist['id']
-        artist_info = artist_db[id]
-        pic_path = get_artist_artwork(id, artist_info['artwork_url'])
-        name = artist_info['name']
-        if percent: count = count_percent(artist['count'])
-        else:       count = f"({artist['count']}) "
-        artist_names = count + format_artist_names(artist_info['genres']).title()
-        sp_url = artist_info['url']
+    write_header(file, "Top Albums")
+    write_over_list(file, albums, album_db, album_parameters, total, percent)
 
-        # replace latex special characters
-        name = replace_latex_special_characters(name)
-        artist_names = replace_latex_special_characters(artist_names)
 
-        file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-        file.write("\\begin{minipage}{.75\\textwidth}\n")
-        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        file.write("\\footnotesize \\truncate{\\textwidth}{"+ artist_names + "}\n")
-        file.write("\\end{minipage}\\\\[2pt]\n")
-        file.write("\n")
+def make_user_stamp(file, user_info):
+    file.write('<div><table>\n')
+    write_block(file, user_info)
+    file.write('</div></table>\n')
 
-    def write_album(album):
-        
-        id = album['id']
-        album_info = album_db[id]
-        pic_path = get_album_artwork(id, album_info['artwork_url'])
-        name = album_info['name']
-        if percent: count = count_percent(album['count'])
-        else:       count = f"({album['count']}) "
-        artist_names = count + format_artist_names(album_info['artist_names'])
-        sp_url = album_info['url']
-
-        # replace latex special characters
-        name = replace_latex_special_characters(name)
-        artist_names = replace_latex_special_characters(artist_names)
-
-        file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-        file.write("\\begin{minipage}{.75\\textwidth}\n")
-        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-        file.write("\\end{minipage}\\\\[2pt]\n")
-        file.write("\n")
-
-    file.write("\\noindent\\begin{minipage}{.47\\textwidth}\n")
-    file.write("\\noindent\\LARGE{Top Artists}\\\\[10pt]\n")
-
-    for artist in artists:
-        write_artist(artist)
-
-    file.write("\\end{minipage}\\hfill%\n")
-    file.write("\\begin{minipage}{.47\\textwidth}\n")
-    file.write("\\noindent\\LARGE{Top Albums}\\\\[10pt]\n")
-    
-    for album in albums:
-        write_album(album)
-    
-    file.write("\\end{minipage}\n")
-    file.write("\\vspace{15pt}\n\n")
-
-def make_user_stamp(file, stamp_info):
-    display_name, user_url, pic_path, tag = stamp_info
-    file.write("\\vfill\\raggedleft\n")
-    file.write("\\begin{minipage}{.47\\textwidth}\n")
-    file.write("\\raggedleft")
-    file.write("\\begin{minipage}{.75\\textwidth}\n")
-    file.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
-    file.write(f"\\normalsize {tag}")
-    file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-    file.write("\\begin{minipage}{.2\\textwidth}\n")
-    file.write("\\includegraphics[width = \\textwidth]{" + pic_path + "}\n")
-    file.write("\\end{minipage}\\end{minipage}\n")
-    file.write("\\newpage\n")
 
 def make_fullpage_summary(file, counts, dbs, stamp_info, message, pct=False):
     songs, artists, albums, total = counts
     track_db, artist_db, album_db = dbs
     make_formatted_top_songs(songs, file, message, total, track_db)
     make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=pct)
-    make_user_stamp(file, stamp_info)
 
-def additional_analysis(file, dbs, cts, usr_info, month, day):
 
-    bins = []
-    for d in range((day-month).days+1):
-        bins.append(month+timedelta(days=d))
+def write_html_header(file):
+    file.write("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Today's Stats!</title>
+    <style>
+img {
+    float: left;
+    width: 60px;
+    height: 60px;
+    padding: 2px;
+}
 
-    def make_plot(info, name):
-        parsed_ts = [parser.parse(t).astimezone(est) for t in info['timestamps']]
-        # print(parsed_ts)
+h1 {
+    font-family: Arial, Helvetica, sans-serif;
+}
 
-        # num_bins = (parsed_ts[-1] - parsed_ts[0]).days + 1
-        # print(num_bins)
-        # print(num_days)
-        # print(day,month)
-        
-        n, a_bins, patches = plt.hist(parsed_ts, bins)
-        # n, bin_edges = np.histogram(parsed_ts, bins)
-        # plt.bar(bins, n, align='center')
+h3 {
+    font-family: Arial, Helvetica, sans-serif;
+}
 
-        locs, labels = plt.xticks()
-        new_labels = []
-        new_locs = []
-        first_date = month
-
-        delta = locs[1]-locs[0]
-        for i in range(len(locs)):
-            l = timedelta(days = delta*i) + first_date
-            nl = delta*i + locs[0]
-            lf = f'{l:%b %d}'
-            new_labels.append(lf)
-            new_locs.append(nl)
-
-        plt.xticks(new_locs, new_labels)
-        plt.savefig(f'{home_path}/analysis/plots/{name}.pdf')
-        plt.close()
-
-        return n
+td {
+    font-family: Arial, Helvetica, sans-serif;
+}
+    </style>
+</head>
+<body>
+    """)
     
-    # def write_info(info, dbs, type):
-
-    #     file.write("\\begin{minipage}{.2\\textwidth}\n")
-    #     file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-    #     file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-    #     file.write("\\begin{minipage}{.75\\textwidth}\n")
-    #     file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-    #     file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-    #     file.write("\\end{minipage}\\\\[2pt]\n")
-    #     file.write("\n")
-
-    def write_stats(n):
-        most_freq_day = month+timedelta(days=np.argmax(n).item())
-        most_freq_ct = int(max(n))
-        
-        file.write(f"\\small \\textbf{{Total plays:}} {int(sum(n))}\\\\")
-        file.write(f"\\small \\textbf{{Most played day:}} {most_freq_day:%B %d}, {most_freq_ct} plays\\\\")
-        file.write(f"\\textbf{{Average Daily Plays:}} {np.average(n):.2f}")
-
-
-    def write(plt_name, info_func, info_ct, info_db):
-        n = make_plot(info_ct, plt_name)
-        file.write("\\noindent\\begin{minipage}{.47\\textwidth}\n")
-        info_func(info_ct, info_db)
-        write_stats(n)
-
-        file.write("\\end{minipage}\\hfill%\n")
-        file.write("\\begin{minipage}{.47\\textwidth}\n")
-        file.write("\\begin{flushright}\\includegraphics[width = \\textwidth]{" + f'{home_path}/analysis/plots/{plt_name}.pdf' + "}\\end{flushright}\n")
-        file.write("\\end{minipage}\n")
-        file.write("")
-
-    def write_track(track_ct, track_db):
-
-        file.write("\\noindent\\LARGE{Top Track!}\\\\[10pt]\n")
-        track_info = track_db[track_ct['id']]
-
-        pic_path = get_album_artwork(track_info['album_id'], track_info['artwork_url'])
-        name = track_info['name']
-        artist_names = format_artist_names(track_info['artist_names'])
-        sp_url = track_info['url']
-        name = replace_latex_special_characters(name)
-        artist_names = replace_latex_special_characters(artist_names)
-        
-        file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-        file.write("\\begin{minipage}{.75\\textwidth}\n")
-        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-        file.write("\\end{minipage}\\\\[2pt]\n")
-        file.write("\n")
-    
-    def write_album(album_ct, album_db):
-
-        file.write("\\noindent\\LARGE{Top Album!}\\\\[10pt]\n")
-        album_info = album_db[album_ct['id']]
-
-        pic_path = get_album_artwork(album_ct['id'], album_info['artwork_url'])
-        name = album_info['name']
-        artist_names = format_artist_names(album_info['artist_names'])
-        sp_url = album_info['url']
-        name = replace_latex_special_characters(name)
-        artist_names = replace_latex_special_characters(artist_names)
-        
-        file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-        file.write("\\begin{minipage}{.75\\textwidth}\n")
-        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-        file.write("\\end{minipage}\\\\[2pt]\n")
-        file.write("\n")
-    
-    def write_artist(artist_ct, artist_db):
-
-        file.write("\\noindent\\LARGE{Top Artist!}\\\\[10pt]\n")
-        id = artist_ct['id']
-        artist_info = artist_db[id]
-        pic_path = get_artist_artwork(id, artist_info['artwork_url'])
-        name = artist_info['name']
-        artist_names = format_artist_names(artist_info['genres']).title()
-        sp_url = artist_info['url']
-
-        # replace latex special characters
-        name = replace_latex_special_characters(name)
-        artist_names = replace_latex_special_characters(artist_names)
-
-        file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-        file.write("\\begin{minipage}{.75\\textwidth}\n")
-        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-        file.write("\\end{minipage}\\\\[2pt]\n")
-        file.write("\n")
-
-
-    track_cts, artist_cts, album_cts, total_tracks = cts
-    track_db, artist_db, album_db = dbs
-
-    # make_plot(track_cts[0], 'track')
-    # make_plot(artist_cts[0], 'artist')
-    # make_plot(album_cts[0], 'album')
-
-    file.write("\\newpage\n")
-
-    write('track', write_track, track_cts[0], track_db)
-    write('artist', write_artist, artist_cts[0], artist_db)
-    write('album', write_album, album_cts[0], album_db)
-    make_user_stamp(file, usr_info)
-    
-    file.write("\\newpage\n")
+def write_html_footer(file):
+    file.write("""
+</body>
+</html>
+    """)
 
     
-
-
 
 def main():
     sp = get_auth()
@@ -543,91 +366,33 @@ def main():
     # user information
     me = sp.current_user()
     display_name = me["display_name"]
-    # get profile photo
-    pp_path = f'{home_path}/analysis/pp.png'
-    urlretrieve(me["images"][0]["url"],pp_path)
-    make_image_circular(pp_path,pp_path)
-    # get user url
+    user_pic_path = me["images"][0]["url"]
     user_url = me["external_urls"]["spotify"]
-    today_usr_info = display_name, user_url, pp_path, today_str
 
-
-    # textfile
-    txt = open(f"{home_path}/analysis/analysis.txt", "w")
-
-    make_top_songs(today_cts, txt, "TODAY'S TOP SONGS", track_db)
-    txt.write("\n")
-    make_top_songs(month_cts, txt, f"{month_str.upper()}'S TOP SONGS", track_db)
-
-    txt.write(f"\n{display_name}, {today_str}")
-
-    txt.close()
-
-
+    today_usr_info = user_url, user_pic_path, display_name, today_str
+    
     # pdf
     html = open(f"{home_path}/analysis/analysis.html", "w")
+    write_html_header(html)
+    make_user_stamp(html, today_usr_info)
 
-    # if full_summary:
-    #     make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
-    #     make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str, pct=True)
-    #     additional_analysis(pdf, dbs, month_cts, today_usr_info, month, eod)
-    today_track_cts, today_artist_cts, today_album_cts, today_total = today_cts
-    month_track_cts, month_artist_cts, month_album_cts, month_total = month_cts
+    if full_summary:
+        make_fullpage_summary(html, today_cts, dbs, today_usr_info, "Today")
+        make_fullpage_summary(html, month_cts, dbs, today_usr_info, month_str, pct=True)
 
-    html.write("""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>Today's Stats!</title>
-    <style>
-img {
-    float: left;
-    width: 100px;
-    height: 100px;
-    padding: 5px;
-}
+    else:
+        today_track_cts, today_artist_cts, today_album_cts, today_total = today_cts
+        month_track_cts, month_artist_cts, month_album_cts, month_total = month_cts
+        make_formatted_top_songs(today_track_cts, html, "Today", today_total, track_db)
+        make_formatted_top_songs(month_track_cts, html, month_str, month_total, track_db)
 
-h1 {
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-h3 {
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-td {
-    font-family: Arial, Helvetica, sans-serif;
-}
-    </style>
-</head>
-<body>
-    """)
-
-    make_formatted_top_songs(today_track_cts, html, "Today", today_total, track_db)
-    make_formatted_top_songs(month_track_cts, html, month_str, month_total, track_db)
-    # make_user_stamp(pdf, today_usr_info)
-
-    html.write("""
-</body>
-</html>
-    """)
-
+    write_html_footer(html)
     html.close()
 
     # write updated database
     dbs = track_db, artist_db, album_db
     with open(f"{home_path}/data/{my}-database.txt","w") as output:
         output.write(json.dumps(dbs))
-
-    # compile and delete auxillary files
-    # os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
-    # # delte auxillary files
-    # os.system(f"rm {home_path}/analysis/analysis.aux")
-    # os.system(f"rm {home_path}/analysis/analysis.log")
-    # os.system(f"rm {home_path}/analysis/analysis.out")
-    # os.system(f"rm {home_path}/analysis/*.png")
-    # os.system(f"rm {home_path}/analysis/part.tex")
-    # os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
 
 if __name__ == "__main__":
     main()
