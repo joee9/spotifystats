@@ -10,5 +10,6 @@ __pychache__/*
 *.html
 !example_summary.html
 !yearly_sum_example.html
+!pdf-example.pdf
 partold.tex
 part.tex
