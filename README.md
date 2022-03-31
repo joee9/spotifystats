@@ -37,7 +37,7 @@ There are three important files:
 - `send_analysis.py`: sends the .txt and .pdf files via email using the addresses within `secrets.py.` This file also backs up the current database to the `gd_path` directory, as well as the .txt file to the `analyses` directory within the `gd_path` directory. Running this file on its own will call `analysis.py`. The command line argument `y` will create the analysis for yesterday.
 - `yearly_recap.py`: this creates a yearly recap of the user's top 20(ish) songs, as well as the top ten songs from each month of the given year. This is backed up to the user's `gd_path` and not sent to them via email. Automatically run when `send_analysis.py` is run.
 
-PDF Features: produced LaTeX .pdf contains the user's top ten songs for the current day and current month. Each song's accompanying album artwork is a hyperlink to the song on Spotify, and number next to it represents the number of times that song was played in the current timeframe. A user specific timestamp is placed in the bottom right of the document, with a hyperlink to the user's profile.
+<!-- PDF Features: produced LaTeX .pdf contains the user's top ten songs for the current day and current month. Each song's accompanying album artwork is a hyperlink to the song on Spotify, and number next to it represents the number of times that song was played in the current timeframe. A user specific timestamp is placed in the bottom right of the document, with a hyperlink to the user's profile. -->
 
 ## Automation
 
