@@ -35,16 +35,16 @@ def main():
 
     path = home_path
 
-    os.system(f"{python_path} {path}/get_rp.py > {path}/output.txt")
-    os.system(f"rm {home_path}/analysis/artist_images/*.jpg") # remove artist images so that most recent can be downloaded
+    # os.system(f"{python_path} {path}/get_rp.py > {path}/output.txt")
+    # os.system(f"rm {home_path}/analysis/artist_images/*.jpg") # remove artist images so that most recent can be downloaded
     os.system(f"{python_path} {path}/analysis.py{args} >> {path}/output.txt")
     os.system(f"rm {path}/output.txt")
-    os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
-    os.system(f"cp {path}/analysis/analysis.txt {gd_path}/analyses/{s}-analysis.txt")
+    # os.system(f"cp {path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
+    # os.system(f"cp {path}/analysis/analysis.txt {gd_path}/analyses/{s}-analysis.txt")
 
     #%%
 
-    with open(f"{path}/analysis/analysis.txt") as f:
+    with open(f"{path}/analysis/analysis.html") as f:
         message = """"""
 
         string = f.readline()
@@ -58,23 +58,23 @@ def main():
     m["To"] = sendee
     m["CC"] = cc
 
-    message = MIMEText(message, "plain")
+    message = MIMEText(message, "html")
     m.attach(message)
 
     # s = datetime.strftime(today, "%m%d%y")
-    attachment = f"{path}/analysis/analysis.pdf"
-    with open(attachment, "rb") as a:
-        part = MIMEBase("application", "octet-stream")
-        part.set_payload(a.read())
+    # attachment = f"{path}/analysis/analysis.ht"
+    # with open(attachment, "rb") as a:
+    #     part = MIMEBase("application", "octet-stream")
+    #     part.set_payload(a.read())
         
 
-    encoders.encode_base64(part)
+    # encoders.encode_base64(part)
 
-    part.add_header(
-        "Content-Disposition",
-        f"attachment; filename={s}-joesspotifystats.pdf",
-    )
-    m.attach(part)
+    # part.add_header(
+    #     "Content-Disposition",
+    #     f"attachment; filename={s}-joesspotifystats.pdf",
+    # )
+    # m.attach(part)
 
     with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
         server.login(sender, password)
@@ -83,9 +83,9 @@ def main():
 
     # update yearly recap
 
-    os.system(f"{python_path} {path}/year_analysis.py {yyyy} >> {path}/output.txt")
-    os.system(f"rm {path}/output.txt")
-    os.system(f"cp {path}/analysis/analysis.pdf {gd_path}/{yyyy}-recap.pdf")
+    # os.system(f"{python_path} {path}/year_analysis.py {yyyy} >> {path}/output.txt")
+    # os.system(f"rm {path}/output.txt")
+    # os.system(f"cp {path}/analysis/analysis.pdf {gd_path}/{yyyy}-recap.pdf")
 
 if __name__ == "__main__":
     main()

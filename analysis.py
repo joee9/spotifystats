@@ -166,8 +166,10 @@ def make_formatted_top_songs(songs, file, message, total, track_db, percent=Fals
     if len(songs) > 10:
         songs = songs[0:10]   
 
-    file.write("\\noindent\\LARGE{" + message + "'s Top Songs}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
-    file.write("\\begin{minipage}{.47\\textwidth}\n")
+    # file.write("\\noindent\\LARGE{" + message + "'s Top Songs}\\hfill \\large{" + f"Total songs played: {total}" + "}\\\\[10pt]\n")
+    # file.write("\\begin{minipage}{.47\\textwidth}\n")
+    file.write(f'<h1>{message}\'s Top Songs</h1>\n')
+    file.write(f'<h3>Total songs played: {total}</h3>\n\n')
 
     def count_percent(count):
         ct_pct = count / tot * 100
@@ -196,32 +198,37 @@ def make_formatted_top_songs(songs, file, message, total, track_db, percent=Fals
         # if "#" in artist_names: artist_names = artist_names.replace("#", "\#")
         # if "%" in artist_names: artist_names = artist_names.replace("%", "\%")
 
-        file.write("\\begin{minipage}{.2\\textwidth}\n")
-        file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
-        file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-        file.write("\\begin{minipage}{.75\\textwidth}\n")
-        file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
-        file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
-        file.write("\\end{minipage}\\\\[5pt]\n")
-        file.write("\n")
+        # file.write("\\begin{minipage}{.2\\textwidth}\n")
+        # file.write("\\href{" + sp_url + "}{\\includegraphics[width = \\textwidth]{" + pic_path + "}}\n")
+        # file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
+        # file.write("\\begin{minipage}{.75\\textwidth}\n")
+        # file.write("\\small \\textbf{\\truncate{\\textwidth}{" + name + "} }\\\\[2pt]\n")
+        # file.write("\\footnotesize \\truncate{\\textwidth}{" + artist_names + "}\n")
+        # file.write("\\end{minipage}\\\\[5pt]\n")
+        # file.write("\n")
+        file.write(f'<tr>\n')
+        file.write(f'<td valign="top" width="100px" height="100px"><a href="{sp_url}"><img src="{track_info["artwork_url"]}" alt="{name}"></a></td>\n')
+        file.write(f'<td valign="middle"><b sytle="font-size:120%">{name}</b><br>{artist_names}</td>\n')
+        file.write(f'</tr>\n')
 
-    upp = 5
-    if len(songs) < upp: upp = len(songs)
-    for i in range(upp):
-        write(songs[i])
+    file.write('<div><table>')
+    for song in songs:
+        write(song)
+    file.write('</table></div>')
+    # upp = 5
+    # if len(songs) < upp: upp = len(songs)
+    # for i in range(upp):
+    #     write(songs[i])
 
-    file.write("\\end{minipage}\\hfill%\n")
-    file.write("\\begin{minipage}{.47\\textwidth}\n")
+    # file.write("\\end{minipage}\\hfill%\n")
+    # file.write("\\begin{minipage}{.47\\textwidth}\n")
     
-    if not ltf:
-        upp = 10 
-        if len(songs) < upp: upp = len(songs)
-        for i in range(5,upp):
-            write(songs[i])
+    # if not ltf:
+    #     upp = 10 
+    #     if len(songs) < upp: upp = len(songs)
+    #     for i in range(5,upp):
+    #         write(songs[i])
     
-    file.write("\\end{minipage}\n")
-    file.write("\\vspace{15pt}\n\n")
-
 def make_formatted_top_artists_albums(file, artists, albums, artist_db, album_db, total, percent=False):
     """
     make a formatted LaTeX minipage containing album artwork, artist names, song titles, and counts
@@ -558,20 +565,54 @@ def main():
 
 
     # pdf
-    pdf = open(f"{home_path}/analysis/part.tex", "w")
+    html = open(f"{home_path}/analysis/analysis.html", "w")
 
-    if full_summary:
-        make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
-        make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str, pct=True)
-        additional_analysis(pdf, dbs, month_cts, today_usr_info, month, eod)
-    else:
-        today_track_cts, today_artist_cts, today_album_cts, today_total = today_cts
-        month_track_cts, month_artist_cts, month_album_cts, month_total = month_cts
-        make_formatted_top_songs(today_track_cts, pdf, "Today", today_total, track_db)
-        make_formatted_top_songs(month_track_cts, pdf, month_str, month_total, track_db)
-        make_user_stamp(pdf, today_usr_info)
+    # if full_summary:
+    #     make_fullpage_summary(pdf, today_cts, dbs, today_usr_info, "Today")
+    #     make_fullpage_summary(pdf, month_cts, dbs, today_usr_info, month_str, pct=True)
+    #     additional_analysis(pdf, dbs, month_cts, today_usr_info, month, eod)
+    today_track_cts, today_artist_cts, today_album_cts, today_total = today_cts
+    month_track_cts, month_artist_cts, month_album_cts, month_total = month_cts
 
-    pdf.close()
+    html.write("""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Today's Stats!</title>
+    <style>
+img {
+    float: left;
+    width: 100px;
+    height: 100px;
+    padding: 5px;
+}
+
+h1 {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+h3 {
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+td {
+    font-family: Arial, Helvetica, sans-serif;
+}
+    </style>
+</head>
+<body>
+    """)
+
+    make_formatted_top_songs(today_track_cts, html, "Today", today_total, track_db)
+    make_formatted_top_songs(month_track_cts, html, month_str, month_total, track_db)
+    # make_user_stamp(pdf, today_usr_info)
+
+    html.write("""
+</body>
+</html>
+    """)
+
+    html.close()
 
     # write updated database
     dbs = track_db, artist_db, album_db
@@ -579,14 +620,14 @@ def main():
         output.write(json.dumps(dbs))
 
     # compile and delete auxillary files
-    os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
-    # delte auxillary files
-    os.system(f"rm {home_path}/analysis/analysis.aux")
-    os.system(f"rm {home_path}/analysis/analysis.log")
-    os.system(f"rm {home_path}/analysis/analysis.out")
-    os.system(f"rm {home_path}/analysis/*.png")
-    os.system(f"rm {home_path}/analysis/part.tex")
-    os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
+    # os.system(f"{pdflatex_path} -output-directory={home_path}/analysis {home_path}/analysis/analysis.tex > {home_path}/analysis/pdflatex_output.txt")
+    # # delte auxillary files
+    # os.system(f"rm {home_path}/analysis/analysis.aux")
+    # os.system(f"rm {home_path}/analysis/analysis.log")
+    # os.system(f"rm {home_path}/analysis/analysis.out")
+    # os.system(f"rm {home_path}/analysis/*.png")
+    # os.system(f"rm {home_path}/analysis/part.tex")
+    # os.system(f"rm {home_path}/analysis/pdflatex_output.txt")
 
 if __name__ == "__main__":
     main()
