@@ -35,6 +35,7 @@ def main():
 
     path = home_path
 
+    os.system(f"{python_path} {path}/get_rp.py >> output.txt")
     os.system(f"{python_path} {path}/analysis.py{args} >> {path}/output.txt")
     os.system(f"{python_path} {path}/year_analysis.py {yyyy} >> {path}/output.txt")
     os.system(f"rm {path}/output.txt")
