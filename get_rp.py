@@ -54,7 +54,7 @@ def get_rp_songs(sp, day):
         most_recent_time = day.astimezone(est).replace(day=1,second=0,minute=0,hour=0,microsecond=1)
 
     # get recently played songs
-    lim = 50
+    lim = 40
     recently_played = sp.current_user_recently_played(limit=lim)
 
     # find the time that the oldest track in recently_played was played 

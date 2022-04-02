@@ -45,7 +45,7 @@ sp = spotipy.Spotify(auth=token)
 # rp = sp.current_user_top_artists(limit = 50)
 rp = sp.current_user_recently_played(limit = 50)
 
-print(rp["items"][0])
+print(rp["items"][49])
 
 # %%
 me = sp.current_user()
