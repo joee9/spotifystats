@@ -160,7 +160,7 @@ def write_block(file, params):
     sp_url, pic_url, header, subheader = params
     file.write(f'<tr>\n')
     file.write(f'<td valign="top" width="{pic_size}" height="{pic_size}"><a href="{sp_url}"><img src="{pic_url}" alt="{header}"></a></td>\n')
-    file.write(f'<td valign="middle"><b sytle="font-size:120%">{header}</b><br>{subheader}</td>\n')
+    file.write(f'<td valign="middle"><b style="font-size:120%">{header}</b><br>{subheader}</td>\n')
     file.write(f'</tr>\n')
 
 
