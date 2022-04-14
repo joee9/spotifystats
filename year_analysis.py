@@ -40,23 +40,6 @@ def get_auth():
     return spotipy.Spotify(auth=token)
 
 
-# def make_user_stamp(i, length, file, stamp_info):
-    display_name, user_url, pic_path, tag = stamp_info
-    if i == length -1: pass
-    elif i % 2 == 0: return
-    file.write("\\vfill\\raggedleft\n")
-    file.write("\\begin{minipage}{.47\\textwidth}\n")
-    file.write("\\raggedleft")
-    file.write("\\begin{minipage}{.75\\textwidth}\n")
-    file.write("\\raggedleft\\large \\href{"+ user_url + "}{\\textbf{" + display_name +  "}}\\\\[2pt]\n")
-    file.write(f"\\normalsize {tag}")
-    file.write("\\end{minipage}\\hspace{.05\\textwidth}%\n")
-    file.write("\\begin{minipage}{.2\\textwidth}\n")
-    file.write("\\includegraphics[width = \\textwidth]{" + pic_path + "}\n")
-    file.write("\\end{minipage}\\end{minipage}\n")
-    file.write("\\newpage\n")
-
-
 def main():
 
     sp = get_auth()
@@ -71,7 +54,7 @@ def main():
     user_pic_path = me["images"][0]["url"]
     user_url = me["external_urls"]["spotify"]
 
-    usr_info = user_url, user_pic_path, display_name, f'Yearly Recap: {yyyy}'
+    usr_info = user_url, user_pic_path, display_name, f'Yearly Recap: {yyyy}', 'circ'
 
 
     # ========== CREATE DATA FRAMES FOR EACH MONTH
@@ -99,15 +82,6 @@ def main():
                 large_album_db.update(album_db)
     
     all_dbs = large_track_db, large_artist_db, large_album_db
-
-    #%%
-
-    # day = start_of_day_est(datetime.today()) + timedelta(days=1)
-    # if day.year == yyyy:
-    #     year = day.replace(month=1, day=1)
-    # else:
-    #     day = day.replace(year=int(yyyy)+1, month=1, day=1)
-    #     year = day.replace(year=int(yyyy), month=min(months), day=1)
 
     html = open(f"{home_path}/analysis/year_analysis.html", "w")
     write_html_header(html)
