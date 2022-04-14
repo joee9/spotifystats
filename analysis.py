@@ -61,20 +61,6 @@ def format_artist_names(artists):
 
     return artist_names
 
-def make_image_circular(input_path, output_path):
-    img = Image.open(input_path)
-    height,width = img.size
-    lum_img = Image.new('L', [height,width] , 0)
-
-    draw = ImageDraw.Draw(lum_img)
-    draw.pieslice([(0,0), (height,width)], 0, 360, fill = 255, outline = "white")
-    img_arr = np.array(img)
-    lum_img_arr = np.array(lum_img)
-    final_img_arr = np.dstack((img_arr,lum_img_arr))
-
-    img = Image.fromarray(final_img_arr)
-    img.save(output_path)
-
 def make_df_range(df, start, end):
     """
     Given a dataframe, a starting date and an ending date (both datetime objects), return a data frame of the value counts for song ids
@@ -150,6 +136,9 @@ def replace_latex_special_characters(s):
 
 def count_percent(count, tot):
     ct_pct = count / tot * 100
+    if count >= 1000:
+        count = str(count)
+        count = count[0] + "," + count[1:]
     return f'({count}: {ct_pct:.1f}%) '
 
 
@@ -157,10 +146,10 @@ def write_block(file, params):
     """
     writes an html block for songs, artists, etc. Place within <div><table></div></table>
     """
-    sp_url, pic_url, header, subheader = params
+    sp_url, pic_url, header, subheader, cl = params
     file.write(f'<tr>\n')
-    file.write(f'<td valign="top" width="{pic_size}" height="{pic_size}"><a href="{sp_url}"><img src="{pic_url}" alt="{header}"></a></td>\n')
-    file.write(f'<td valign="middle"><b style="font-size:120%">{header}</b><br>{subheader}</td>\n')
+    file.write(f'<td valign="top" width="{pic_size}" height="{pic_size}"><a href="{sp_url}"><img class="{cl}" src="{pic_url}" alt="{header}"></a></td>\n')
+    file.write(f'<td valign="middle"><b style="font-size:110%">{header}</b><br>{subheader}</td>\n')
     file.write(f'</tr>\n')
 
 
@@ -174,7 +163,7 @@ def track_parameters(track, track_db, tot, percent=False):
     header = track_info['name']
     subheader = f'({track["count"]}) ' + format_artist_names(track_info['artist_names'])
 
-    return sp_url, pic_url, header, subheader
+    return sp_url, pic_url, header, subheader, 'norm'
 
 
 def album_parameters(album, album_db, tot, percent=False):
@@ -189,7 +178,7 @@ def album_parameters(album, album_db, tot, percent=False):
     else:       count = f"({album['count']}) "
     subheader = count + format_artist_names(album_info['artist_names'])
 
-    return sp_url, pic_url, header, subheader
+    return sp_url, pic_url, header, subheader, 'norm'
 
 
 def artist_parameters(artist, artist_db, tot, percent=False):
@@ -204,7 +193,7 @@ def artist_parameters(artist, artist_db, tot, percent=False):
     else:       count = f"({artist['count']}) "
     subheader = count + format_artist_names(artist_info['genres']).title()
 
-    return sp_url, pic_url, header, subheader
+    return sp_url, pic_url, header, subheader, 'circ'
 
 
 def write_over_list(file, items, items_db, f_params, tot, percent=False):
@@ -278,11 +267,20 @@ def write_html_header(file):
 <head>
     <title>Today's Stats!</title>
     <style>
+
 img {
     float: left;
     width: 60px;
     height: 60px;
-    padding: 2px;
+    padding: 4px;
+}
+
+img.norm {
+    border-radius: 0%;
+}
+
+img.circ {
+    border-radius: 50%;
 }
 
 h1 {
@@ -369,7 +367,7 @@ def main():
     user_pic_path = me["images"][0]["url"]
     user_url = me["external_urls"]["spotify"]
 
-    today_usr_info = user_url, user_pic_path, display_name, today_str
+    today_usr_info = user_url, user_pic_path, display_name, today_str, 'circ'
     
     # pdf
     html = open(f"{home_path}/analysis/analysis.html", "w")
