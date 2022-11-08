@@ -108,11 +108,23 @@ class track(music):
     
 class database:
 
-    def __init__(self) -> None:
+    def __init__(self, df=None, sp=None) -> None:
         self.tracks = {}
         self.albums = {}
         self.artists = {}
         self.total = 0
+
+        if df is not None:
+            if sp is not None:
+                self.add_from_db(sp, df)
+            else:
+                raise Exception('To load from df, an sp token must also be passed.')
+    
+    def add_from_db(self, sp, df):
+        for row in df.iterrows():
+            i, (id, ts) = row
+            logging.info(f'{i=}')
+            self.add_track(sp, id, ts)
     
     def add_music(self, db, mus: music, id, ts):
         if (m:=db.get(id)) is None:
@@ -206,6 +218,8 @@ class database:
             count_str = f'({t.count})'
         
             print(f'{i:2}: {count_str:>5} {t.get_name()}, by {artist_str}, in {album_str}')
+
+        print('')
     
     def print_top_artists(self, sp, num=10):
 
@@ -217,35 +231,30 @@ class database:
             count_str = f'({a.count})'
             print(f'{i:2}: {count_str:>5} {a.get_name()}')
 
+        print('')
+
     def print_top_albums(self, sp, num=10):
 
         top_albums = self.get_top_albums(num=num)
 
-        print('TOP Albums')
+        print('TOP ALBUMS')
         for i,a in enumerate(top_albums, start=1):
             a.set_attributes(sp)
             artist_str = self.formatted_artist_str(sp, a.get_artist_ids())
             count_str = f'({a.count})'
             print(f'{i:2}: {count_str:>5} {a.get_name()}, by {artist_str}')
+        
+        print('')
 
         
 def main():
     sp = get_auth()
 
-    db = database()
-
     df = pd.read_csv(f'./data/2022-11-songlist.txt')
-
-    for row in df.iterrows():
-
-        i, (id, ts) = row
-        # print(i)
-        db.add_track(sp, id, ts)
+    db = database(df=df, sp=sp)
     
     db.print_top_tracks(sp, num=-1)
-    print('\n')
     db.print_top_albums(sp, num=-1)
-    print('\n')
     db.print_top_artists(sp, num=-1)
 
 
