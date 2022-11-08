@@ -1,7 +1,11 @@
 import pandas as pd
 import logging
+from os.path import exists
+import pickle
+# logging.basicConfig(level=logging.INFO)
 
 from general import get_auth
+
 
 class music:
     """
@@ -37,6 +41,10 @@ class music:
         precondition: name has already been set
         """
         return self.name
+    
+    def reset(self):
+        self.timestamps = []
+        self.count = 0
         
 class album(music):
 
@@ -116,16 +124,26 @@ class database:
 
         if df is not None:
             if sp is not None:
-                self.add_from_db(sp, df)
+                self.from_db(sp, df)
             else:
                 raise Exception('To load from df, an sp token must also be passed.')
     
-    def add_from_db(self, sp, df):
+    def from_db(self, sp, df):
         for row in df.iterrows():
             i, (id, ts) = row
             logging.info(f'{i=}')
             self.add_track(sp, id, ts)
     
+    def clean(self):
+
+        def reset_dict(d):
+            for v in d.values():
+                v.reset()
+
+        reset_dict(self.albums)
+        reset_dict(self.artists)
+        reset_dict(self.tracks)
+
     def add_music(self, db, mus: music, id, ts):
         if (m:=db.get(id)) is None:
             db[id] = mus(id, ts)
@@ -245,17 +263,30 @@ class database:
             print(f'{i:2}: {count_str:>5} {a.get_name()}, by {artist_str}')
         
         print('')
-
+    
         
 def main():
     sp = get_auth()
 
-    df = pd.read_csv(f'./data/2022-11-songlist.txt')
-    db = database(df=df, sp=sp)
+    yyyymm = '2022-01'
+
+    if exists(db_path:=f'./data/{yyyymm}-database.pickle'):
+        with open(db_path, 'rb') as infile:
+            db = pickle.load(infile)
+    else:
+        db = database()
+
+    df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
+
+    db.from_db(sp, df)
     
-    db.print_top_tracks(sp, num=-1)
-    db.print_top_albums(sp, num=-1)
-    db.print_top_artists(sp, num=-1)
+    db.print_top_tracks(sp, num=10)
+    db.print_top_albums(sp, num=10)
+    db.print_top_artists(sp, num=10)
+
+    with open(db_path, 'wb') as out:
+        db.clean()
+        pickle.dump(db, out)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 ./data/*
 *.txt
 *.jpg
+*.pickle
 *.cache*
 secrets.*
 __pychache__/*
