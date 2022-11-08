@@ -1,9 +1,9 @@
-# Joe Nyhan, 6 December 2021
+# Joe Nyhan, 6 December 2021; updated 5 November 2022
 # When run, this file writes recently played songs to ./data/%m-%Y-recentlyplayed.txt
 #%%
-# spotify libraries
-import spotipy.util as util # for getting authorization
-import spotipy              # for getting tracks, etc.
+
+import pandas as pd
+from os.path import exists
 
 # time related packages
 from datetime import datetime, timedelta
@@ -12,25 +12,12 @@ est = pytz.timezone("America/New_York")
 utc = pytz.timezone("UTC")
 from dateutil import parser
 
-# os related
-from os.path import exists
-import os
+from general import get_auth
 
-# for analysis
-import pandas as pd
-# client information
-from secrets import username, client_id, client_secret, home_path, gd_path
+from secrets import home_path
 
-def get_auth():
-    redirect_uri = 'http://localhost:7777/callback'
-    # scope = 'user-read-recently-played'
-    scope = "user-top-read"
 
-    token = util.prompt_for_user_token(username=username, scope=scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
-
-    return spotipy.Spotify(auth=token)
-
-def get_rp_songs(sp, day):
+def get_rp_songs_on_day(sp, day):
 
     my = datetime.strftime(day, "%Y-%m") # month year; for file paths
     path = f"{home_path}/data/{my}-songlist.txt"
@@ -109,12 +96,9 @@ def get_rp_songs(sp, day):
         
     # write back to df
     df.to_csv(path, index=False)
-    # copy to backup location
-    os.system(f"cp {home_path}/data/{my}-songlist.txt {gd_path}/backups/{my}-songlist.txt")
 
 
-def main():
-    sp = get_auth()
+def get_rp(sp):
 
     # ========== GET DAYS TO RUN (usually just today)
     today = datetime.today().astimezone(est)
@@ -129,7 +113,13 @@ def main():
         days_to_run.append(yesterday)
     # run necessary days
     for day in days_to_run:
-        get_rp_songs(sp, day)
+        get_rp_songs_on_day(sp, day)
+
+
+def main():
+    sp = get_auth()
+    get_rp(sp)
+
 
 if __name__ == "__main__":
     main()
