@@ -238,7 +238,7 @@ class database:
     
     def get_top_music(self, sp, music_dict, num=10):
         """
-        return a sorted top list of a music type; sorted by count, then name
+        return a sorted top list of a music type of length num; sorted by count, then name; num=-1 returns the whole list. If num > total number of songs, it returns the whole list
         """
         all_music = sorted(music_dict.values(), key=lambda m: -m.get_count())
 
@@ -285,7 +285,7 @@ class database:
             album_str = self.formatted_album_str(sp, t.get_album_id())
             count_str = f'({t.count})'
         
-            print(f'{i:2}: {count_str:>5} {t.get_name()}, by {artist_str}, in {album_str}')
+            print(f'{i:2}. {count_str:>5} {t.get_name()}, by {artist_str}, in {album_str}')
 
         print('')
     
@@ -296,7 +296,7 @@ class database:
         print('TOP ARTISTS')
         for i,a in enumerate(top_artists, start=1):
             count_str = f'({a.count})'
-            print(f'{i:2}: {count_str:>5} {a.get_name()}')
+            print(f'{i:2}. {count_str:>5} {a.get_name()}')
 
         print('')
 
@@ -308,10 +308,22 @@ class database:
         for i,a in enumerate(top_albums, start=1):
             artist_str = self.formatted_artist_str(sp, a.get_artist_ids())
             count_str = f'({a.count})'
-            print(f'{i:2}: {count_str:>5} {a.get_name()}, by {artist_str}')
+            print(f'{i:2}. {count_str:>5} {a.get_name()}, by {artist_str}')
         
         print('')
-    
+
+def init_database(yyyymm: str) -> database:
+    if exists(db_path:=f'./data/{yyyymm}-database.pickle'):
+        with open(db_path, 'rb') as infile:
+            return pickle.load(infile)
+
+    return database()
+
+def dump_database(yyyymm: str, db: database):
+    with open(f'./data/{yyyymm}-database.pickle', 'wb') as out:
+        db.clean()
+        pickle.dump(db, out)
+
         
 def main():
     sp = get_auth()
@@ -322,27 +334,28 @@ def main():
 
     all_db = database()
 
+    dbs = []
+
+    # todo: need to make dump, init more oo
+
     for mm in mms:
         yyyymm = f'2022-{mm}'
 
-        if exists(db_path:=f'./data/{yyyymm}-database.pickle'):
-            with open(db_path, 'rb') as infile:
-                db = pickle.load(infile)
-        else:
-            db = database()
+        db = init_database(yyyymm)
 
         df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
         db.from_db(sp, df)
 
         all_db.merge_with(db)
+
+        dbs.append((yyyymm, db))
     
-    all_db.print_top_tracks(sp, num=30)
+    all_db.print_top_tracks(sp, num=10)
     all_db.print_top_albums(sp, num=10)
     all_db.print_top_artists(sp, num=10)
 
-    with open(db_path, 'wb') as out:
-        db.clean()
-        pickle.dump(db, out)
+    for yyyymm, db in dbs:
+        dump_database(yyyymm, db)
 
 
 if __name__ == '__main__':
