@@ -5,6 +5,7 @@ import pickle
 # logging.basicConfig(level=logging.INFO)
 
 from general import get_auth
+from get_rp import get_rp
 
 
 class music:
@@ -41,6 +42,9 @@ class music:
         precondition: name has already been set
         """
         return self.name
+    
+    def get_count(self):
+        return self.count
     
     def reset(self):
         self.timestamps = []
@@ -232,31 +236,48 @@ class database:
                 s = s[:-2]
         return s
     
-    def get_top_music(self, music_dict, num=10):
-        all_music = sorted(music_dict.values(), key=lambda m: -m.count)
+    def get_top_music(self, sp, music_dict, num=10):
+        """
+        return a sorted top list of a music type; sorted by count, then name
+        """
+        all_music = sorted(music_dict.values(), key=lambda m: -m.get_count())
 
-        if num > len(all_music):
-            logging.warning(f'"num" parameter with value {num} is longer than whole list.')
-            num = len(all_music)
-        if num == -1:
-            num = len(all_music)
+        sort_ct_then_name = lambda t: (-t.get_count(), t.get_name())
 
-        return all_music[0:num]
+        if num > len(all_music) or num == -1: 
+            for m in all_music:
+                m.set_attributes(sp)
+            return sorted(all_music, key=sort_ct_then_name)
+
+        n = num
+        curr = all_music[n-1]
+        last_ct = curr.get_count()
+        while curr.get_count() >= last_ct and (n < len(all_music)):
+            n += 1
+            curr = all_music[n-1]
+        
+        top_music = all_music[0:n]
+        for m in top_music:
+            m.set_attributes(sp)
+        
+        # as all attributes are set, we can sort by count, then name 
+        return sorted(top_music, key=sort_ct_then_name)[0:num]
+
     
-    def get_top_tracks(self, num=10):
-        return self.get_top_music(self.tracks, num=num)
+    def get_top_tracks(self, sp, num=10):
+        return self.get_top_music(sp, self.tracks, num=num)
     
-    def get_top_albums(self, num=10):
-        return self.get_top_music(self.albums, num=num)
+    def get_top_albums(self, sp, num=10):
+        return self.get_top_music(sp, self.albums, num=num)
 
-    def get_top_artists(self, num=10):
-        return self.get_top_music(self.artists, num=num)
+    def get_top_artists(self, sp, num=10):
+        return self.get_top_music(sp, self.artists, num=num)
     
     # these three print functions could likely be combined and the print string changed for each type of "music", but this was easy for the time being. Its not perfectly object oriented, but c'est la vie...
 
     def print_top_tracks(self, sp, num=10):
 
-        top_tracks = self.get_top_tracks(num=num)
+        top_tracks = self.get_top_tracks(sp, num=num)
 
         print('TOP TRACKS')
         for i,t in enumerate(top_tracks, start=1):
@@ -270,11 +291,10 @@ class database:
     
     def print_top_artists(self, sp, num=10):
 
-        top_artists = self.get_top_artists(num=num)
+        top_artists = self.get_top_artists(sp, num=num)
 
         print('TOP ARTISTS')
         for i,a in enumerate(top_artists, start=1):
-            a.set_attributes(sp)
             count_str = f'({a.count})'
             print(f'{i:2}: {count_str:>5} {a.get_name()}')
 
@@ -282,11 +302,10 @@ class database:
 
     def print_top_albums(self, sp, num=10):
 
-        top_albums = self.get_top_albums(num=num)
+        top_albums = self.get_top_albums(sp, num=num)
 
         print('TOP ALBUMS')
         for i,a in enumerate(top_albums, start=1):
-            a.set_attributes(sp)
             artist_str = self.formatted_artist_str(sp, a.get_artist_ids())
             count_str = f'({a.count})'
             print(f'{i:2}: {count_str:>5} {a.get_name()}, by {artist_str}')
@@ -296,8 +315,10 @@ class database:
         
 def main():
     sp = get_auth()
+    get_rp(sp)
 
     mms = ['01', '02', '03', '04', '05']
+    # mms = ['11']
 
     all_db = database()
 
@@ -315,7 +336,7 @@ def main():
 
         all_db.merge_with(db)
     
-    all_db.print_top_tracks(sp, num=10)
+    all_db.print_top_tracks(sp, num=30)
     all_db.print_top_albums(sp, num=10)
     all_db.print_top_artists(sp, num=10)
 
