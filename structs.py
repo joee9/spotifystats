@@ -143,6 +143,35 @@ class database:
         reset_dict(self.albums)
         reset_dict(self.artists)
         reset_dict(self.tracks)
+    
+    def merge_with(self, other):
+
+        def merge_dicts(a,b):
+            # iterate over all items in b and add them to a if necessary
+            for key,bv in b.items():
+
+                # this item *is* in a
+                if (av:=a.get(key)) is not None:
+
+                    # we have two "music" objects of the same id; need to merge timestamps and counts, and ensure if one of the dbs has the attributes, we keep them
+
+                    all_ts = av.timestamps + bv.timestamps
+                    total_count = av.count + bv.count
+
+                    # pull in attribues if necessary
+                    if (not av.attributes) and bv.attributes:
+                        av = bv
+
+                    av.timesteps = all_ts
+                    av.count = total_count
+
+                # item is not in a
+                else:
+                    a[key] = bv
+
+        merge_dicts(self.albums, other.albums)
+        merge_dicts(self.artists, other.artists)
+        merge_dicts(self.tracks, other.tracks)
 
     def add_music(self, db, mus: music, id, ts):
         if (m:=db.get(id)) is None:
@@ -268,21 +297,27 @@ class database:
 def main():
     sp = get_auth()
 
-    yyyymm = '2022-01'
+    mms = ['01', '02', '03', '04', '05']
 
-    if exists(db_path:=f'./data/{yyyymm}-database.pickle'):
-        with open(db_path, 'rb') as infile:
-            db = pickle.load(infile)
-    else:
-        db = database()
+    all_db = database()
 
-    df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
+    for mm in mms:
+        yyyymm = f'2022-{mm}'
 
-    db.from_db(sp, df)
+        if exists(db_path:=f'./data/{yyyymm}-database.pickle'):
+            with open(db_path, 'rb') as infile:
+                db = pickle.load(infile)
+        else:
+            db = database()
+
+        df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
+        db.from_db(sp, df)
+
+        all_db.merge_with(db)
     
-    db.print_top_tracks(sp, num=10)
-    db.print_top_albums(sp, num=10)
-    db.print_top_artists(sp, num=10)
+    all_db.print_top_tracks(sp, num=10)
+    all_db.print_top_albums(sp, num=10)
+    all_db.print_top_artists(sp, num=10)
 
     with open(db_path, 'wb') as out:
         db.clean()
