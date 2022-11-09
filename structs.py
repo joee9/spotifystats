@@ -184,8 +184,12 @@ class database:
         merge_dicts(self.tracks, other.tracks)
 
         self.total += other.total
+    
+    def __iadd__(self, other):
+        self.add(other)
+        return self
 
-    def add_music(self, db, mus: music, id, ts):
+    def __add_music(self, db, mus: music, id, ts):
         if (m:=db.get(id)) is None:
             db[id] = mus(id, ts)
         else:
@@ -194,13 +198,13 @@ class database:
         return db[id]
 
     def add_album(self, album_id, ts):
-        return self.add_music(self.albums, album, album_id, ts)
+        return self.__add_music(self.albums, album, album_id, ts)
     
     def add_artist(self, artist_id, ts):
-        return self.add_music(self.artists, artist, artist_id, ts)
+        return self.__add_music(self.artists, artist, artist_id, ts)
         
     def add_track(self, sp, track_id, ts):
-        t = self.add_music(self.tracks, track, track_id, ts)
+        t = self.__add_music(self.tracks, track, track_id, ts)
         t.set_attributes(sp)
 
         artist_ids = t.get_artist_ids()
@@ -217,19 +221,19 @@ class database:
         album = self.albums[album_id]
         album.set_attributes(sp)
 
-    def formatted_album_str(self, sp, album_id):
-        """
-        precondition: album_id is already in the album dict
-        """
-        self.set_album_data(sp, album_id)
-        return self.albums[album_id].get_name()
-
     def set_artist_data(self, sp, artist_ids):
         """
         precondition: all artist_ids are already in the artist db
         """
         for id in artist_ids:
             self.artists[id].set_attributes(sp)
+
+    def formatted_album_str(self, sp, album_id):
+        """
+        precondition: album_id is already in the album dict
+        """
+        self.set_album_data(sp, album_id)
+        return self.albums[album_id].get_name()
 
     def formatted_artist_str(self, sp, artist_ids):
         """
@@ -244,7 +248,7 @@ class database:
                 s = s[:-2]
         return s
     
-    def get_top_music(self, sp, music_dict, num=10):
+    def __get_top_music(self, sp, music_dict, num=10):
         """
         return a sorted top list of a music type of length num; sorted by count, then name; num=-1 returns the whole list. If num > total number of songs, it returns the whole list
         """
@@ -271,15 +275,14 @@ class database:
         # as all attributes are set, we can sort by count, then name 
         return sorted(top_music, key=sort_ct_then_name)[0:num]
 
-    
     def get_top_tracks(self, sp, num=10):
-        return self.get_top_music(sp, self.tracks, num=num)
+        return self.__get_top_music(sp, self.tracks, num=num)
     
     def get_top_albums(self, sp, num=10):
-        return self.get_top_music(sp, self.albums, num=num)
+        return self.__get_top_music(sp, self.albums, num=num)
 
     def get_top_artists(self, sp, num=10):
-        return self.get_top_music(sp, self.artists, num=num)
+        return self.__get_top_music(sp, self.artists, num=num)
     
     # these three print functions could likely be combined and the print string changed for each type of "music", but this was easy for the time being. Its not perfectly object oriented, but c'est la vie...
 
@@ -298,7 +301,7 @@ class database:
 
         print('')
     
-    def print_top_artists(self, sp, num=10):
+    def print_top_artists(self, sp, num=5):
 
         top_artists = self.get_top_artists(sp, num=num)
 
@@ -309,7 +312,7 @@ class database:
 
         print('')
 
-    def print_top_albums(self, sp, num=10):
+    def print_top_albums(self, sp, num=5):
 
         top_albums = self.get_top_albums(sp, num=num)
 
@@ -320,6 +323,11 @@ class database:
             print(f'{i:2}. {count_str:>5} {a.get_name()}, by {artist_str}')
         
         print('')
+
+    def print_top(self, sp):
+        self.print_top_tracks(sp)
+        self.print_top_artists(sp)
+        self.print_top_albums(sp)
 
 def init_database(sp, yyyymm: str) -> database:
     """
@@ -346,14 +354,15 @@ def main():
     sp = get_auth()
     get_rp(sp)
 
-    mms = ['01', '02', '03', '04', '05', '11']
+    mms = ['01', '02', '03', '04', '05']#, '11']
     # mms = ['11']
 
     all_db = database()
 
     dbs = []
 
-    # todo: need to make dump, init more oo
+    # TODO: need to make dump, init more oo
+
     for mm in mms:
         yyyymm = f'2022-{mm}'
         print(yyyymm)
@@ -361,13 +370,11 @@ def main():
         db = init_database(sp, yyyymm)
         print(db.total)
 
-        all_db.add(db)
+        all_db += db
 
         dbs.append((yyyymm, db))
     
-    all_db.print_top_tracks(sp, num=10)
-    all_db.print_top_albums(sp, num=10)
-    all_db.print_top_artists(sp, num=10)
+    all_db.print_top(sp)
 
     for yyyymm, db in dbs:
         dump_database(yyyymm, db)
