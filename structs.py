@@ -4,6 +4,11 @@ from os.path import exists
 import pickle
 # logging.basicConfig(level=logging.INFO)
 
+from datetime import datetime, timedelta
+from pytz import timezone
+from dateutil.parser import parse
+est = timezone('America/New_York')
+
 from general import get_auth
 from get_rp import get_rp
 
@@ -128,11 +133,11 @@ class database:
 
         if df is not None:
             if sp is not None:
-                self.from_db(sp, df)
+                self.from_df(sp, df)
             else:
                 raise Exception('To load from df, an sp token must also be passed.')
     
-    def from_db(self, sp, df):
+    def add_df(self, sp, df):
         for row in df.iterrows():
             i, (id, ts) = row
             logging.info(f'{i=}')
@@ -286,11 +291,15 @@ class database:
     
     # these three print functions could likely be combined and the print string changed for each type of "music", but this was easy for the time being. Its not perfectly object oriented, but c'est la vie...
 
-    def print_top_tracks(self, sp, num=10):
+    def print_top_tracks(self, sp, num=10, message=''):
 
         top_tracks = self.get_top_tracks(sp, num=num)
 
-        print('TOP TRACKS')
+        if message != '':
+            message += "'s "
+            message = message.upper()
+
+        print(f'{message}TOP TRACKS')
         print(f'Total plays: {self.total}')
         for i,t in enumerate(top_tracks, start=1):
             artist_str = self.formatted_artist_str(sp, t.get_artist_ids())
@@ -324,12 +333,16 @@ class database:
         
         print('')
 
-    def print_top(self, sp):
-        self.print_top_tracks(sp)
+    def print_top(self, sp, message=''):
+        self.print_top_tracks(sp, message=message)
         self.print_top_artists(sp)
         self.print_top_albums(sp)
 
-def init_database(sp, yyyymm: str) -> database:
+    def full_summary(self, sp, message=''):
+        self.print_top(sp, message)
+        return ''
+
+def load_database(yyyymm: str) -> database:
     """
     initializes a database with songs from month yyyymm and cached data from optional database
     """
@@ -339,9 +352,6 @@ def init_database(sp, yyyymm: str) -> database:
     else:
         db = database()
 
-    df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
-    db.from_db(sp, df)
-
     return db
 
 def dump_database(yyyymm: str, db: database):
@@ -349,36 +359,83 @@ def dump_database(yyyymm: str, db: database):
         db.clean()
         pickle.dump(db, out)
 
+def df_date_range(df, start, stop):
+
+    # empty songlist-like dataframe
+    items = pd.DataFrame(columns=['ID', 'Timestamp'])
+    for row in df.iterrows():
+        i, (id, timestamp) = row
+        curr = parse(timestamp).astimezone(est)
+        if start < curr < stop:
+            items = items.append({'ID': id, 'Timestamp': timestamp}, ignore_index=True)
+
+    return items
+
+def daily_analysis(sp, start:datetime=None, stop:datetime=None, year_analysis=False):
+
+    if stop is None:
+        stop = datetime.now(tz=est)
+    if start is None:
+        start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0)
+
+    yyyymm = f'{stop:%Y-%m}'
+    month_message = f"{stop:%B}"
+
+    if not exists(month_path := f'./data/{yyyymm}-songlist.txt'):
+        raise Exception('Songlist does not exist!')
+
+    db = load_database(yyyymm)
+    month_df = pd.read_csv(month_path)
+    today_df = df_date_range(month_df, start, stop)
+    
+    # current day
+    db.add_df(sp, today_df)
+    today_html = db.full_summary(sp, 'Today')
+    db.clean()
+
+    db.add_df(sp, month_df)
+    month_html = db.full_summary(sp, month_message)
+
+    if year_analysis:
+        yyyy = yyyymm[0:4]
+        year_analysis(sp, yyyy, db)
+        return
+    
+    dump_database(yyyymm, db)
+
+def year_analysis(sp, yyyy, db):
+    pass
         
 def main():
     sp = get_auth()
     get_rp(sp)
 
-    mms = ['01', '02', '03', '04', '05']#, '11']
-    # mms = ['11']
+    # mms = ['01', '02', '03', '04', '05']#, '11']
+    # # mms = ['11']
 
-    all_db = database()
+    # all_db = database()
 
-    dbs = []
+    # dbs = []
 
-    # TODO: need to make dump, init more oo
+    # # TODO: need to make dump, init more oo
 
-    for mm in mms:
-        yyyymm = f'2022-{mm}'
-        print(yyyymm)
+    # for mm in mms:
+    #     yyyymm = f'2022-{mm}'
+    #     print(yyyymm)
 
-        db = init_database(sp, yyyymm)
-        print(db.total)
+    #     db = load_database(sp, yyyymm)
+    #     print(db.total)
 
-        all_db += db
+    #     all_db += db
 
-        dbs.append((yyyymm, db))
+    #     dbs.append((yyyymm, db))
     
-    all_db.print_top(sp)
+    # all_db.print_top(sp)
 
-    for yyyymm, db in dbs:
-        dump_database(yyyymm, db)
+    # for yyyymm, db in dbs:
+    #     dump_database(yyyymm, db)
 
+    daily_analysis(sp)
 
 if __name__ == '__main__':
     main()
