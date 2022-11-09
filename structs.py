@@ -137,6 +137,7 @@ class database:
             i, (id, ts) = row
             logging.info(f'{i=}')
             self.add_track(sp, id, ts)
+            self.total += 1
     
     def clean(self):
 
@@ -147,8 +148,13 @@ class database:
         reset_dict(self.albums)
         reset_dict(self.artists)
         reset_dict(self.tracks)
+
+        self.total = 0
     
-    def merge_with(self, other):
+    def add(self, other):
+        """
+        add two *distinct* dictionaries; assumes that elements in one are not in the other. This would affect the counts/timestamps, and items would be overcounted
+        """
 
         def merge_dicts(a,b):
             # iterate over all items in b and add them to a if necessary
@@ -176,6 +182,8 @@ class database:
         merge_dicts(self.albums, other.albums)
         merge_dicts(self.artists, other.artists)
         merge_dicts(self.tracks, other.tracks)
+
+        self.total += other.total
 
     def add_music(self, db, mus: music, id, ts):
         if (m:=db.get(id)) is None:
@@ -280,6 +288,7 @@ class database:
         top_tracks = self.get_top_tracks(sp, num=num)
 
         print('TOP TRACKS')
+        print(f'Total plays: {self.total}')
         for i,t in enumerate(top_tracks, start=1):
             artist_str = self.formatted_artist_str(sp, t.get_artist_ids())
             album_str = self.formatted_album_str(sp, t.get_album_id())
@@ -312,12 +321,20 @@ class database:
         
         print('')
 
-def init_database(yyyymm: str) -> database:
+def init_database(sp, yyyymm: str) -> database:
+    """
+    initializes a database with songs from month yyyymm and cached data from optional database
+    """
     if exists(db_path:=f'./data/{yyyymm}-database.pickle'):
         with open(db_path, 'rb') as infile:
-            return pickle.load(infile)
+            db = pickle.load(infile)
+    else:
+        db = database()
 
-    return database()
+    df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
+    db.from_db(sp, df)
+
+    return db
 
 def dump_database(yyyymm: str, db: database):
     with open(f'./data/{yyyymm}-database.pickle', 'wb') as out:
@@ -329,7 +346,7 @@ def main():
     sp = get_auth()
     get_rp(sp)
 
-    mms = ['01', '02', '03', '04', '05']
+    mms = ['01', '02', '03', '04', '05', '11']
     # mms = ['11']
 
     all_db = database()
@@ -337,16 +354,14 @@ def main():
     dbs = []
 
     # todo: need to make dump, init more oo
-
     for mm in mms:
         yyyymm = f'2022-{mm}'
+        print(yyyymm)
 
-        db = init_database(yyyymm)
+        db = init_database(sp, yyyymm)
+        print(db.total)
 
-        df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
-        db.from_db(sp, df)
-
-        all_db.merge_with(db)
+        all_db.add(db)
 
         dbs.append((yyyymm, db))
     
