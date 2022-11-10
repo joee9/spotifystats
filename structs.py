@@ -340,7 +340,6 @@ class database:
 
     def full_summary(self, sp, message=''):
         self.print_top(sp, message)
-        return ''
 
 def load_database(yyyymm: str) -> database:
     """
@@ -378,8 +377,8 @@ def daily_analysis(sp, start:datetime=None, stop:datetime=None, year_analysis=Fa
     if start is None:
         start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0)
 
-    yyyymm = f'{stop:%Y-%m}'
-    month_message = f"{stop:%B}"
+    yyyymm = f'{start:%Y-%m}'
+    month_message = f'{start:%B}'
 
     if not exists(month_path := f'./data/{yyyymm}-songlist.txt'):
         raise Exception('Songlist does not exist!')
@@ -390,18 +389,17 @@ def daily_analysis(sp, start:datetime=None, stop:datetime=None, year_analysis=Fa
     
     # current day
     db.add_df(sp, today_df)
-    today_html = db.full_summary(sp, 'Today')
+    db.full_summary(sp, 'Today')
     db.clean()
 
     db.add_df(sp, month_df)
-    month_html = db.full_summary(sp, month_message)
+    db.full_summary(sp, month_message)
 
     if year_analysis:
         yyyy = yyyymm[0:4]
         year_analysis(sp, yyyy, db)
-        return
-    
-    dump_database(yyyymm, db)
+    else:
+        dump_database(yyyymm, db)
 
 def year_analysis(sp, yyyy, db):
     pass
@@ -435,7 +433,12 @@ def main():
     # for yyyymm, db in dbs:
     #     dump_database(yyyymm, db)
 
+    start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0, day=16, month=5)
+
+    stop = start + timedelta(days=1, minutes=-1)
+
     daily_analysis(sp)
+    daily_analysis(sp, start=start, stop=stop)
 
 if __name__ == '__main__':
     main()
