@@ -2,7 +2,8 @@ import pandas as pd
 import logging
 from os.path import exists
 import pickle
-# logging.basicConfig(level=logging.INFO)
+import json
+logging.basicConfig(level=logging.INFO)
 
 from datetime import datetime, timedelta
 from pytz import timezone
@@ -23,9 +24,15 @@ class music:
 
     def __init__(self, id, ts) -> None:
         self.id = id
+        self.attributes = False
+
+        if ts is None:
+            self.timestamps = []
+            self.count = 0
+            return
+
         self.timestamps = [ts]
         self.count = 1
-        self.attributes = False
     
     def __hash__(self) -> int:
         return hash(self.id)
@@ -37,9 +44,9 @@ class music:
     def __str__(self) -> str:
         return f'{self.count:3}, {self.name} ({self.id})'
     
-    def set_attributes(self, sp):
+    def set_attributes(self, sp, data=None):
         if not self.attributes:
-            self.get_data(sp)
+            self.get_data(sp, data)
             self.attributes = True
     
     def get_name(self):
@@ -54,7 +61,7 @@ class music:
     def reset(self):
         self.timestamps = []
         self.count = 0
-        
+    
 class album(music):
 
     name = None
@@ -62,7 +69,14 @@ class album(music):
     artist_ids = None
     artwork_url = None
 
-    def get_data(self, sp):
+    def get_data(self, sp, data=None):
+
+        if data is not None:
+            self.name = data['name']
+            self.url = data['url']
+            self.artist_ids = data['artist_ids']
+            self.artwork_url = data['artwork_url']
+            return
 
         data = sp.album(self.id)
 
@@ -85,7 +99,14 @@ class artist(music):
     artwork_url = None
     genres = None
 
-    def get_data(self, sp):
+    def get_data(self, sp, data=None):
+
+        if data is not None:
+            self.name = data['name']
+            self.url = data['url']
+            self.artwork_url = data['artwork_url']
+            self.genres = data['genres']
+            return
 
         data = sp.artist(self.id)
 
@@ -105,7 +126,15 @@ class track(music):
     artist_ids = None
     album_id = None
     
-    def get_data(self, sp):
+    def get_data(self, sp, data=None):
+
+        if data is not None:
+            self.name = data['name']
+            self.url = data['url']
+            self.artist_ids = data['artist_ids']
+            self.album_id = data['album_id']
+            return
+
         data = sp.track(self.id)
 
         self.name = data['name']
@@ -145,7 +174,8 @@ class database:
     def add_df(self, sp, df):
         for row in df.iterrows():
             i, (id, ts) = row
-            logging.info(f'{i=}')
+            if i % 10 == 0:
+                logging.info(f'{i=}')
             self.add_track(sp, id, ts)
             self.total += 1
     
@@ -167,9 +197,47 @@ class database:
         if yyyymm is None:
             raise Exception('Cannot dump unless yyyymm is specified!')
 
-        with open(f'./data/{self.get_yyyymm()}-database.pickle', 'wb') as out:
+        with open(f'./data/{self.get_yyyymm()}-database.json', 'w') as out:
             self.clean()
-            pickle.dump(self, out)
+            json.dump(self.to_dict(), out)
+
+    def to_dict(self):
+        def serialize_music_dict(d):
+            new_d = {}
+            for id,m in d.items():
+                if not m.attributes:
+                    continue
+                new_d[id] = m.__dict__
+            return new_d
+        
+        all = {}
+        all['tracks'] = serialize_music_dict(self.tracks)
+        all['albums'] = serialize_music_dict(self.albums)
+        all['artists'] = serialize_music_dict(self.artists)
+        all['yyyymm'] = self.yyyymm
+
+        return all
+
+    def from_dict(self, data):
+        """
+        assumes a json serialized dictionary containing all necessary data
+
+        Note: only entries containing sp data are written to file, so we can assume that all those read in will contain necessary data; e.g. 'name' cannot be None
+        """
+        def deserialize_music_dict(d, mus: music):
+            new_d = {}
+            for id,m_dict in d.items():
+                m = mus(id, None)
+                m.set_attributes(None, data=m_dict)
+                new_d[id] = m
+            return new_d
+
+        # print(data['tracks'])
+
+        self.tracks = deserialize_music_dict(data['tracks'], track)
+        self.albums = deserialize_music_dict(data['albums'], album)
+        self.artists = deserialize_music_dict(data['artists'], artist)
+        self.yyyymm = data['yyyymm']
 
     def add(self, other):
         """
@@ -339,7 +407,6 @@ class database:
         print('TOP ALBUMS')
         for i,a in enumerate(top_albums, start=1):
             artist_str = self.formatted_artist_str(sp, a.get_artist_ids())
-            count_str = f'({a.count})'
             self.__print_out_str(i, a, f'{a.get_name()}, by {artist_str}')
         
         print('')
@@ -368,11 +435,12 @@ def load_database(yyyymm: str) -> database:
     """
     initializes a database with songs from month yyyymm and cached data from optional database
     """
-    if exists(db_path:=f'./data/{yyyymm}-database.pickle'):
-        with open(db_path, 'rb') as infile:
-            db = pickle.load(infile)
-    else:
-        db = database(yyyymm=yyyymm)
+    db = database(yyyymm=yyyymm)
+    if exists(db_path:=f'./data/{yyyymm}-database.json'):
+        with open(db_path, 'r') as infile:
+            data = json.load(infile)
+        
+        db.from_dict(data)
 
     if db.verify_year(yyyymm):
         return db

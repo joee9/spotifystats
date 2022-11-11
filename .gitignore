@@ -2,6 +2,7 @@
 *.txt
 *.jpg
 *.pickle
+*.json
 *.cache*
 secrets.*
 __pychache__/*
