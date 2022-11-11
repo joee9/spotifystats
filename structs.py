@@ -94,6 +94,9 @@ class artist(music):
 
         self.artwork_url = data['images'][1]['url']
         self.genres = data['genres']
+    
+    def get_genres(self):
+        return ', '.join(self.genres).title()
 
 class track(music):
 
@@ -125,7 +128,7 @@ class track(music):
     
 class database:
 
-    def __init__(self, df=None, sp=None) -> None:
+    def __init__(self, df=None, sp=None, yyyymm=None) -> None:
         self.tracks = {}
         self.albums = {}
         self.artists = {}
@@ -136,6 +139,8 @@ class database:
                 self.from_df(sp, df)
             else:
                 raise Exception('To load from df, an sp token must also be passed.')
+        
+        self.yyyymm = yyyymm
     
     def add_df(self, sp, df):
         for row in df.iterrows():
@@ -156,6 +161,16 @@ class database:
 
         self.total = 0
     
+    def dump(self):
+        
+        yyyymm = self.get_yyyymm()
+        if yyyymm is None:
+            raise Exception('Cannot dump unless yyyymm is specified!')
+
+        with open(f'./data/{self.get_yyyymm()}-database.pickle', 'wb') as out:
+            self.clean()
+            pickle.dump(self, out)
+
     def add(self, other):
         """
         add two *distinct* dictionaries; assumes that elements in one are not in the other. This would affect the counts/timestamps, and items would be overcounted
@@ -245,13 +260,8 @@ class database:
         precondition: all artist ids given are already in the artists_db; should be the case if done in the correct order, i.e. all tracks read in and add ids added along the way
         """
         self.set_artist_data(sp, artist_ids)
-        s = ''
-        for i,id in enumerate(artist_ids):
-            artist = self.artists[id]
-            s += f'{artist.get_name()}, '
-            if i == len(artist_ids)-1:
-                s = s[:-2]
-        return s
+        names = [self.artists[id].get_name() for id in artist_ids]
+        return ', '.join(names)
     
     def __get_top_music(self, sp, music_dict, num=10):
         """
@@ -289,7 +299,9 @@ class database:
     def get_top_artists(self, sp, num=10):
         return self.__get_top_music(sp, self.artists, num=num)
     
-    # these three print functions could likely be combined and the print string changed for each type of "music", but this was easy for the time being. Its not perfectly object oriented, but c'est la vie...
+    def __print_out_str(self, i, m: music, s):
+        count_str = f'({m.count})'
+        print(f'{i:2}. {count_str:>5} {s}')
 
     def print_top_tracks(self, sp, num=10, message=''):
 
@@ -304,9 +316,9 @@ class database:
         for i,t in enumerate(top_tracks, start=1):
             artist_str = self.formatted_artist_str(sp, t.get_artist_ids())
             album_str = self.formatted_album_str(sp, t.get_album_id())
-            count_str = f'({t.count})'
-        
-            print(f'{i:2}. {count_str:>5} {t.get_name()}, by {artist_str}, in {album_str}')
+            out_str = f'{t.get_name()}, by {artist_str}, in {album_str}'
+
+            self.__print_out_str(i, t, out_str)
 
         print('')
     
@@ -316,8 +328,7 @@ class database:
 
         print('TOP ARTISTS')
         for i,a in enumerate(top_artists, start=1):
-            count_str = f'({a.count})'
-            print(f'{i:2}. {count_str:>5} {a.get_name()}')
+            self.__print_out_str(i, a, f'{a.get_name()}: {a.get_genres()}')
 
         print('')
 
@@ -329,7 +340,7 @@ class database:
         for i,a in enumerate(top_albums, start=1):
             artist_str = self.formatted_artist_str(sp, a.get_artist_ids())
             count_str = f'({a.count})'
-            print(f'{i:2}. {count_str:>5} {a.get_name()}, by {artist_str}')
+            self.__print_out_str(i, a, f'{a.get_name()}, by {artist_str}')
         
         print('')
 
@@ -341,6 +352,18 @@ class database:
     def full_summary(self, sp, message=''):
         self.print_top(sp, message)
 
+    def verify_year(self, yyyymm: str) -> bool:
+        return (self.yyyymm == yyyymm)
+
+    def get_yyyymm(self):
+        return self.yyyymm
+
+    def get_month_str(self):
+        yyyy, mm = self.yyyymm.split('-')
+        yyyy, mm = int(yyyy), int(mm)
+        dt = datetime(year=yyyy, month=mm, day=1)
+        return f'{dt:%B}'
+
 def load_database(yyyymm: str) -> database:
     """
     initializes a database with songs from month yyyymm and cached data from optional database
@@ -349,14 +372,11 @@ def load_database(yyyymm: str) -> database:
         with open(db_path, 'rb') as infile:
             db = pickle.load(infile)
     else:
-        db = database()
+        db = database(yyyymm=yyyymm)
 
-    return db
-
-def dump_database(yyyymm: str, db: database):
-    with open(f'./data/{yyyymm}-database.pickle', 'wb') as out:
-        db.clean()
-        pickle.dump(db, out)
+    if db.verify_year(yyyymm):
+        return db
+    raise Exception('db is (somehow) from the wrong year!')
 
 def df_date_range(df, start, stop):
 
@@ -400,13 +420,36 @@ def daily_analysis(sp, start:datetime=None, stop:datetime=None, year_analysis=Fa
 
     if year_analysis:
         yyyy = yyyymm[0:4]
-        year_analysis(sp, yyyy, db)
+        full_year_analysis(sp, yyyy, db=db)
     else:
-        dump_database(yyyymm, db)
+        db.dump()
+    
+def full_year_analysis(sp, yyyy, db=None):
 
-def year_analysis(sp, yyyy, db):
-    pass
+    date_strs = [f'{yyyy}-{mm:02}' for mm in range(1,13)]
+
+    valid_date_strs = []
+    for ds in date_strs:
+        if exists(f'./data/{ds}-songlist.txt'):
+            valid_date_strs.append(ds)
+    
+    all_db = database()
+    dbs = []
+    for yyyymm in valid_date_strs:
+        db = load_database(yyyymm)
+        df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
+        db.add_df(sp, df)
+        db.full_summary(sp, db.get_month_str())
+
+        all_db += db
         
+        dbs.append(db)
+
+    all_db.full_summary(sp, str(yyyy))
+
+    for db in dbs:
+        db.dump()
+
 def main():
     sp = get_auth()
     get_rp(sp)
@@ -436,12 +479,13 @@ def main():
     # for yyyymm, db in dbs:
     #     dump_database(yyyymm, db)
 
-    start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0, day=16, month=5)
+    # start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0, day=16, month=5)
 
-    stop = start + timedelta(days=1, minutes=-1)
+    # stop = start + timedelta(days=1, minutes=-1)
 
     daily_analysis(sp)
-    daily_analysis(sp, start=start, stop=stop)
+    # daily_analysis(sp, start=start, stop=stop)
+    full_year_analysis(sp, 2022)
 
 if __name__ == '__main__':
     main()
