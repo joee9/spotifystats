@@ -376,6 +376,8 @@ def daily_analysis(sp, start:datetime=None, stop:datetime=None, year_analysis=Fa
         stop = datetime.now(tz=est)
     if start is None:
         start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0)
+    
+    month_start = start.replace(day=1)
 
     yyyymm = f'{start:%Y-%m}'
     month_message = f'{start:%B}'
@@ -384,8 +386,9 @@ def daily_analysis(sp, start:datetime=None, stop:datetime=None, year_analysis=Fa
         raise Exception('Songlist does not exist!')
 
     db = load_database(yyyymm)
-    month_df = pd.read_csv(month_path)
-    today_df = df_date_range(month_df, start, stop)
+    df = pd.read_csv(month_path)
+    month_df = df_date_range(df, month_start, stop)
+    today_df = df_date_range(df, start, stop)
     
     # current day
     db.add_df(sp, today_df)
