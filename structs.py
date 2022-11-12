@@ -1,17 +1,13 @@
-import pandas as pd
 import logging
+# logging.basicConfig(level=logging.INFO)
 from os.path import exists
-import pickle
 import json
-logging.basicConfig(level=logging.INFO)
 
 from datetime import datetime, timedelta
 from pytz import timezone
-from dateutil.parser import parse
 est = timezone('America/New_York')
 
-from general import get_auth
-from get_rp import get_rp
+from secrets import home
 
 
 class music:
@@ -46,8 +42,7 @@ class music:
     
     def set_attributes(self, sp, data=None):
         if not self.attributes:
-            self.get_data(sp, data)
-            self.attributes = True
+            self.attributes = self.get_data(sp, data)
     
     def get_name(self):
         """
@@ -69,14 +64,16 @@ class album(music):
     artist_ids = None
     artwork_url = None
 
-    def get_data(self, sp, data=None):
+    def get_data(self, sp, data=None) -> bool:
 
         if data is not None:
+            if not data['attributes']:
+                return False
             self.name = data['name']
             self.url = data['url']
             self.artist_ids = data['artist_ids']
             self.artwork_url = data['artwork_url']
-            return
+            return True
 
         data = sp.album(self.id)
 
@@ -85,6 +82,7 @@ class album(music):
 
         self.artist_ids = [i['id'] for i in data['artists']]
         self.artwork_url = data['images'][1]['url']
+        return True
     
     def get_artist_ids(self):
         """
@@ -99,14 +97,16 @@ class artist(music):
     artwork_url = None
     genres = None
 
-    def get_data(self, sp, data=None):
+    def get_data(self, sp, data=None) -> bool:
 
         if data is not None:
+            if not data['attributes']:
+                return False
             self.name = data['name']
             self.url = data['url']
             self.artwork_url = data['artwork_url']
             self.genres = data['genres']
-            return
+            return True
 
         data = sp.artist(self.id)
 
@@ -115,6 +115,8 @@ class artist(music):
 
         self.artwork_url = data['images'][1]['url']
         self.genres = data['genres']
+
+        return True
     
     def get_genres(self):
         return ', '.join(self.genres).title()
@@ -126,14 +128,16 @@ class track(music):
     artist_ids = None
     album_id = None
     
-    def get_data(self, sp, data=None):
+    def get_data(self, sp, data=None) -> bool:
 
         if data is not None:
+            if not data['attributes']:
+                return False
             self.name = data['name']
             self.url = data['url']
             self.artist_ids = data['artist_ids']
             self.album_id = data['album_id']
-            return
+            return True
 
         data = sp.track(self.id)
 
@@ -142,6 +146,7 @@ class track(music):
 
         self.artist_ids = [i['id'] for i in data['album']['artists']]
         self.album_id = data['album']['id']
+        return True
 
     def get_artist_ids(self):
         """
@@ -197,7 +202,7 @@ class database:
         if yyyymm is None:
             raise Exception('Cannot dump unless yyyymm is specified!')
 
-        with open(f'./data/{self.get_yyyymm()}-database.json', 'w') as out:
+        with open(f'{home}/data/{self.get_yyyymm()}-database.json', 'w') as out:
             self.clean()
             json.dump(self.to_dict(), out)
 
@@ -205,8 +210,6 @@ class database:
         def serialize_music_dict(d):
             new_d = {}
             for id,m in d.items():
-                if not m.attributes:
-                    continue
                 new_d[id] = m.__dict__
             return new_d
         
@@ -368,7 +371,9 @@ class database:
         return self.__get_top_music(sp, self.artists, num=num)
     
     def __print_out_str(self, i, m: music, s):
-        count_str = f'({m.count})'
+        if (ct := m.count) == 0:
+            return
+        count_str = f'({ct})'
         print(f'{i:2}. {count_str:>5} {s}')
 
     def print_top_tracks(self, sp, num=10, message=''):
@@ -411,13 +416,19 @@ class database:
         
         print('')
 
-    def print_top(self, sp, message=''):
+    def print_top(self, sp, message='', all=False):
+        if all:
+            self.print_top_tracks(sp, message=message, num=-1)
+            self.print_top_artists(sp, num=-1)
+            self.print_top_albums(sp, num=-1)
+            return
+
         self.print_top_tracks(sp, message=message)
         self.print_top_artists(sp)
         self.print_top_albums(sp)
 
-    def full_summary(self, sp, message=''):
-        self.print_top(sp, message)
+    def full_summary(self, sp, message='', all=False):
+        self.print_top(sp, message, all=all)
 
     def verify_year(self, yyyymm: str) -> bool:
         return (self.yyyymm == yyyymm)
@@ -436,7 +447,7 @@ def load_database(yyyymm: str) -> database:
     initializes a database with songs from month yyyymm and cached data from optional database
     """
     db = database(yyyymm=yyyymm)
-    if exists(db_path:=f'./data/{yyyymm}-database.json'):
+    if exists(db_path:=f'{home}/data/{yyyymm}-database.json'):
         with open(db_path, 'r') as infile:
             data = json.load(infile)
         
@@ -446,114 +457,10 @@ def load_database(yyyymm: str) -> database:
         return db
     raise Exception('db is (somehow) from the wrong year!')
 
-def df_date_range(df, start, stop):
-
-    # empty songlist-like dataframe
-    items = pd.DataFrame(columns=['ID', 'Timestamp'])
-    for row in df.iterrows():
-        i, (id, timestamp) = row
-        curr = parse(timestamp).astimezone(est)
-        if start < curr < stop:
-            items = items.append({'ID': id, 'Timestamp': timestamp}, ignore_index=True)
-
-    return items
-
-def daily_analysis(sp, start:datetime=None, stop:datetime=None, year_analysis=False):
-
-    if stop is None:
-        stop = datetime.now(tz=est)
-    if start is None:
-        start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0)
-    
-    month_start = start.replace(day=1)
-
-    yyyymm = f'{start:%Y-%m}'
-    month_message = f'{start:%B}'
-
-    if not exists(month_path := f'./data/{yyyymm}-songlist.txt'):
-        raise Exception('Songlist does not exist!')
-
-    db = load_database(yyyymm)
-    df = pd.read_csv(month_path)
-    month_df = df_date_range(df, month_start, stop)
-    today_df = df_date_range(df, start, stop)
-    
-    # current day
-    db.add_df(sp, today_df)
-    db.full_summary(sp, 'Today')
-    db.clean()
-
-    db.add_df(sp, month_df)
-    db.full_summary(sp, month_message)
-
-    if year_analysis:
-        yyyy = yyyymm[0:4]
-        full_year_analysis(sp, yyyy, db=db)
-    else:
-        db.dump()
-    
-def full_year_analysis(sp, yyyy, db=None):
-
-    date_strs = [f'{yyyy}-{mm:02}' for mm in range(1,13)]
-
-    valid_date_strs = []
-    for ds in date_strs:
-        if exists(f'./data/{ds}-songlist.txt'):
-            valid_date_strs.append(ds)
-    
-    all_db = database()
-    dbs = []
-    for yyyymm in valid_date_strs:
-        db = load_database(yyyymm)
-        df = pd.read_csv(f'./data/{yyyymm}-songlist.txt')
-        db.add_df(sp, df)
-        db.full_summary(sp, db.get_month_str())
-
-        all_db += db
-        
-        dbs.append(db)
-
-    all_db.full_summary(sp, str(yyyy))
-
-    for db in dbs:
-        db.dump()
 
 def main():
-    sp = get_auth()
-    get_rp(sp)
-
-    # mms = ['01', '02', '03', '04', '05']#, '11']
-    # # mms = ['11']
-
-    # all_db = database()
-
-    # dbs = []
-
-    # # TODO: need to make dump, init more oo
-
-    # for mm in mms:
-    #     yyyymm = f'2022-{mm}'
-    #     print(yyyymm)
-
-    #     db = load_database(sp, yyyymm)
-    #     print(db.total)
-
-    #     all_db += db
-
-    #     dbs.append((yyyymm, db))
-    
-    # all_db.print_top(sp)
-
-    # for yyyymm, db in dbs:
-    #     dump_database(yyyymm, db)
-
-    # start = datetime.now(tz=est).replace(microsecond=0, second=0, minute=0, hour=0, day=16, month=5)
-
-    # stop = start + timedelta(days=1, minutes=-1)
-
-    daily_analysis(sp)
-    # daily_analysis(sp, start=start, stop=stop)
-    full_year_analysis(sp, 2022)
+    print('Testing has now been moved to "analysis.py".')
+    pass
 
 if __name__ == '__main__':
     main()

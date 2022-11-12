@@ -14,13 +14,13 @@ from dateutil import parser
 
 from general import get_auth
 
-from secrets import home_path
+from secrets import home
 
 
 def get_rp_songs_on_day(sp, day):
 
     my = datetime.strftime(day, "%Y-%m") # month year; for file paths
-    path = f"{home_path}/data/{my}-songlist.txt"
+    path = f"{home}/data/{my}-songlist.txt"
 
     # beginning of very next day; lastest timestamp that could be added
     latest_time = (day + timedelta(days = 1)).replace(hour=0,second=0,minute=0,microsecond=0)
