@@ -263,7 +263,7 @@ class database:
                     if (not av.attributes) and bv.attributes:
                         av = bv
 
-                    av.timesteps = all_ts
+                    av.timestamps = all_ts
                     av.count = total_count
 
                 # item is not in a
